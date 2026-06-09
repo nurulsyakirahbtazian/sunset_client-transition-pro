@@ -525,9 +525,9 @@ function Dashboard() {
 
             <Section icon={<BookOpen className="h-4 w-4" />} title="Knowledge Transfer Notes" subtitle="The things only the outgoing lead knows">
               <div className="space-y-4">
-                <Field label="Tribal Knowledge"><textarea rows={3} className="input-base" value={kt.tribal} onChange={(e) => setKT({ ...kt, tribal: e.target.value })} /></Field>
-                <Field label="Watch-outs"><textarea rows={3} className="input-base" value={kt.watchouts} onChange={(e) => setKT({ ...kt, watchouts: e.target.value })} /></Field>
-                <Field label="Historical Context"><textarea rows={3} className="input-base" value={kt.history} onChange={(e) => setKT({ ...kt, history: e.target.value })} /></Field>
+                <Field label="Tribal Knowledge"><textarea rows={3} className="input-base" placeholder="e.g. Unwritten rules, past decisions, or relationships that matter" value={kt.tribal} onChange={(e) => setKT({ ...kt, tribal: e.target.value })} /></Field>
+                <Field label="Watch-outs"><textarea rows={3} className="input-base" placeholder="e.g. Sensitive dates, approval delays, or things to avoid" value={kt.watchouts} onChange={(e) => setKT({ ...kt, watchouts: e.target.value })} /></Field>
+                <Field label="Historical Context"><textarea rows={3} className="input-base" placeholder="e.g. Account start date, past migrations, or team changes" value={kt.history} onChange={(e) => setKT({ ...kt, history: e.target.value })} /></Field>
               </div>
             </Section>
           </div>
