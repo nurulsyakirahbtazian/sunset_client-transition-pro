@@ -517,9 +517,9 @@ function Dashboard() {
 
             <Section icon={<MessageSquare className="h-4 w-4" />} title="Client Preferences" subtitle="How they like to work">
               <div className="space-y-4">
-                <Field label="Communication Style"><textarea rows={2} className="input-base" value={prefs.communication} onChange={(e) => setPrefs({ ...prefs, communication: e.target.value })} /></Field>
-                <Field label="Reporting Expectations"><textarea rows={2} className="input-base" value={prefs.reporting} onChange={(e) => setPrefs({ ...prefs, reporting: e.target.value })} /></Field>
-                <Field label="Escalation Path"><textarea rows={2} className="input-base" value={prefs.escalation} onChange={(e) => setPrefs({ ...prefs, escalation: e.target.value })} /></Field>
+                <Field label="Communication Style"><textarea rows={2} className="input-base" placeholder="e.g. Weekly calls, Slack channel, email for formal updates" value={prefs.communication} onChange={(e) => setPrefs({ ...prefs, communication: e.target.value })} /></Field>
+                <Field label="Reporting Expectations"><textarea rows={2} className="input-base" placeholder="e.g. Monthly dashboard, quarterly business review" value={prefs.reporting} onChange={(e) => setPrefs({ ...prefs, reporting: e.target.value })} /></Field>
+                <Field label="Escalation Path"><textarea rows={2} className="input-base" placeholder="e.g. Account Lead → Director → VP" value={prefs.escalation} onChange={(e) => setPrefs({ ...prefs, escalation: e.target.value })} /></Field>
               </div>
             </Section>
 
