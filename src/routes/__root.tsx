@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Client Transition Pro" },
+      { name: "description", content: "You said: ai hackathon marketing looks likeAI hackathon marketing is a fast-paced, highly collaborative sprint where teams rapidly build prototypes—such as auto" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Client Transition Pro" },
+      { property: "og:description", content: "You said: ai hackathon marketing looks likeAI hackathon marketing is a fast-paced, highly collaborative sprint where teams rapidly build prototypes—such as auto" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Client Transition Pro" },
+      { name: "twitter:description", content: "You said: ai hackathon marketing looks likeAI hackathon marketing is a fast-paced, highly collaborative sprint where teams rapidly build prototypes—such as auto" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/390d97cd-e22f-4c6f-902c-a1be0ba8bf3f" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/390d97cd-e22f-4c6f-902c-a1be0ba8bf3f" },
     ],
     links: [
       {
