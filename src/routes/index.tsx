@@ -24,52 +24,37 @@ type RecurringTask = { task: string; frequency: string; instructions: string };
 type Issue = { issue: string; priority: string; status: string };
 
 const initialClient = {
-  name: "Northwind Industrial Group",
-  industry: "Industrial Manufacturing / IoT",
-  region: "North America (HQ: Chicago, IL)",
-  services: "ABM Strategy, Marketing Automation, Demand Gen, Webinar Ops",
+  name: "",
+  industry: "",
+  region: "",
+  services: "",
 };
 
-const initialStakeholders: Stakeholder[] = [
-  { name: "Margaret Chen", role: "VP, Demand Generation", email: "m.chen@northwind.example", notes: "Primary decision maker. Prefers Tuesday status calls. Avoid Fridays." },
-  { name: "David Okafor", role: "Sr. Marketing Ops Manager", email: "d.okafor@northwind.example", notes: "Day-to-day contact for Marketo + 6sense. Highly technical." },
-  { name: "Priya Raman", role: "Director, Field Marketing", email: "p.raman@northwind.example", notes: "Owns ON24 webinar program. Loops in for EMEA events." },
-  { name: "Jordan Blake", role: "CMO", email: "j.blake@northwind.example", notes: "Executive sponsor — QBR audience only. Wants pipeline impact framed in $." },
-];
+const initialStakeholders: Stakeholder[] = [];
 
-const initialTasks: RecurringTask[] = [
-  { task: "Weekly Marketo Program Audit", frequency: "Weekly — Mondays", instructions: "Review all active programs, check smart campaign flow steps, validate UTM consistency, log anomalies in shared tracker." },
-  { task: "6sense Account Scoring Review", frequency: "Bi-weekly", instructions: "Pull top 50 surging accounts, cross-reference SFDC ownership, route to AE via ABM workflow." },
-  { task: "Monthly Executive Pipeline Report", frequency: "Monthly — 1st business day", instructions: "Compile MQL→SQL→Opp velocity, attach Marketo + SFDC dashboards, deliver via Loom + PDF." },
-  { task: "ON24 Webinar QA", frequency: "Per event (~2x/month)", instructions: "Run T-72hr tech check, validate SFDC sync, post-event upload recording + drip enrollment." },
-];
+const initialTasks: RecurringTask[] = [];
 
 const initialPlatforms: Record<string, boolean> = {
-  Marketo: true,
-  Salesforce: true,
-  "6sense": true,
-  ON24: true,
-  "Custom (Snowflake + dbt)": true,
+  Marketo: false,
+  Salesforce: false,
+  "6sense": false,
+  ON24: false,
+  "HubSpot": false,
   "LinkedIn Campaign Manager": false,
 };
 
-const initialIssues: Issue[] = [
-  { issue: "Marketo–SFDC sync lag (>30 min) on Lead object", priority: "High", status: "In Progress" },
-  { issue: "6sense intent data not flowing into Account Engagement dashboard", priority: "Medium", status: "Open" },
-  { issue: "EMEA webinar registrants missing GDPR consent flag", priority: "Critical", status: "Escalated" },
-  { issue: "Outdated nurture: 'Q2 Launch' still active post-campaign", priority: "Low", status: "Open" },
-];
+const initialIssues: Issue[] = [];
 
 const initialPrefs = {
-  communication: "Slack for daily ops (channel #northwind-ops). Email for anything contractual. Weekly Tuesday 10am CT status call (30 min, agenda 24hrs in advance).",
-  reporting: "Bi-weekly performance snapshot (Looker). Monthly executive deck (PDF + Loom walkthrough). Quarterly business review with CMO + VP Demand Gen.",
-  escalation: "Tier 1: Account Lead → Tier 2: Engagement Director (within 4hrs) → Tier 3: VP Client Services (same day). Critical platform outages: page on-call immediately.",
+  communication: "",
+  reporting: "",
+  escalation: "",
 };
 
 const initialKT = {
-  tribal: "Margaret was burned by a previous agency that over-promised on attribution. Always frame results with conservative ranges. Never present single-touch attribution without context.",
-  watchouts: "Avoid scheduling launches during their fiscal close (last week of Mar/Jun/Sep/Dec). Their legal team reviews all gated assets — build in 5 business days.",
-  history: "Account onboarded Q3 2023. Migrated from HubSpot → Marketo in early 2024. Previous lead (J. Martinez) departed Aug 2025; institutional knowledge gap in webinar ops — see ON24 runbook v3.",
+  tribal: "",
+  watchouts: "",
+  history: "",
 };
 
 // ---------- Component ----------
