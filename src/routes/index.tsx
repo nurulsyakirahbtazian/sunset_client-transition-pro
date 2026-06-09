@@ -68,7 +68,7 @@ function Dashboard() {
   const [prefs, setPrefs] = useState(initialPrefs);
   const [kt, setKT] = useState(initialKT);
   const [activeTab, setActiveTab] = useState<"plan" | "insights" | "structure">("plan");
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>(["Q3-QBR-Notes.pdf", "SOP_Marketo_Audit_v4.docx", "Stakeholder_Emails_Sept.eml"]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
