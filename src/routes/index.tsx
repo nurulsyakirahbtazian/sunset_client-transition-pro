@@ -1,29 +1,587 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import {
+  Upload, FileSpreadsheet, Users, Briefcase, ListChecks, AlertTriangle,
+  MessageSquare, BookOpen, Layers, Sparkles, Clock, ShieldCheck, Download,
+  Calendar, CheckCircle2, FileText, Plus, Trash2,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Handover OS — B2B Client Transition Dashboard" },
+      { name: "description", content: "Premium B2B client handover and account transition platform with AI-polished insights and one-click Excel export." },
     ],
   }),
-  component: Index,
+  component: Dashboard,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+// ---------- Mock data ----------
+type Stakeholder = { name: string; role: string; email: string; notes: string };
+type RecurringTask = { task: string; frequency: string; instructions: string };
+type Issue = { issue: string; priority: string; status: string };
+
+const initialClient = {
+  name: "Northwind Industrial Group",
+  industry: "Industrial Manufacturing / IoT",
+  region: "North America (HQ: Chicago, IL)",
+  services: "ABM Strategy, Marketing Automation, Demand Gen, Webinar Ops",
+};
+
+const initialStakeholders: Stakeholder[] = [
+  { name: "Margaret Chen", role: "VP, Demand Generation", email: "m.chen@northwind.example", notes: "Primary decision maker. Prefers Tuesday status calls. Avoid Fridays." },
+  { name: "David Okafor", role: "Sr. Marketing Ops Manager", email: "d.okafor@northwind.example", notes: "Day-to-day contact for Marketo + 6sense. Highly technical." },
+  { name: "Priya Raman", role: "Director, Field Marketing", email: "p.raman@northwind.example", notes: "Owns ON24 webinar program. Loops in for EMEA events." },
+  { name: "Jordan Blake", role: "CMO", email: "j.blake@northwind.example", notes: "Executive sponsor — QBR audience only. Wants pipeline impact framed in $." },
+];
+
+const initialTasks: RecurringTask[] = [
+  { task: "Weekly Marketo Program Audit", frequency: "Weekly — Mondays", instructions: "Review all active programs, check smart campaign flow steps, validate UTM consistency, log anomalies in shared tracker." },
+  { task: "6sense Account Scoring Review", frequency: "Bi-weekly", instructions: "Pull top 50 surging accounts, cross-reference SFDC ownership, route to AE via ABM workflow." },
+  { task: "Monthly Executive Pipeline Report", frequency: "Monthly — 1st business day", instructions: "Compile MQL→SQL→Opp velocity, attach Marketo + SFDC dashboards, deliver via Loom + PDF." },
+  { task: "ON24 Webinar QA", frequency: "Per event (~2x/month)", instructions: "Run T-72hr tech check, validate SFDC sync, post-event upload recording + drip enrollment." },
+];
+
+const initialPlatforms: Record<string, boolean> = {
+  Marketo: true,
+  Salesforce: true,
+  "6sense": true,
+  ON24: true,
+  "Custom (Snowflake + dbt)": true,
+  "LinkedIn Campaign Manager": false,
+};
+
+const initialIssues: Issue[] = [
+  { issue: "Marketo–SFDC sync lag (>30 min) on Lead object", priority: "High", status: "In Progress" },
+  { issue: "6sense intent data not flowing into Account Engagement dashboard", priority: "Medium", status: "Open" },
+  { issue: "EMEA webinar registrants missing GDPR consent flag", priority: "Critical", status: "Escalated" },
+  { issue: "Outdated nurture: 'Q2 Launch' still active post-campaign", priority: "Low", status: "Open" },
+];
+
+const initialPrefs = {
+  communication: "Slack for daily ops (channel #northwind-ops). Email for anything contractual. Weekly Tuesday 10am CT status call (30 min, agenda 24hrs in advance).",
+  reporting: "Bi-weekly performance snapshot (Looker). Monthly executive deck (PDF + Loom walkthrough). Quarterly business review with CMO + VP Demand Gen.",
+  escalation: "Tier 1: Account Lead → Tier 2: Engagement Director (within 4hrs) → Tier 3: VP Client Services (same day). Critical platform outages: page on-call immediately.",
+};
+
+const initialKT = {
+  tribal: "Margaret was burned by a previous agency that over-promised on attribution. Always frame results with conservative ranges. Never present single-touch attribution without context.",
+  watchouts: "Avoid scheduling launches during their fiscal close (last week of Mar/Jun/Sep/Dec). Their legal team reviews all gated assets — build in 5 business days.",
+  history: "Account onboarded Q3 2023. Migrated from HubSpot → Marketo in early 2024. Previous lead (J. Martinez) departed Aug 2025; institutional knowledge gap in webinar ops — see ON24 runbook v3.",
+};
+
+// ---------- Component ----------
+function Dashboard() {
+  const [client, setClient] = useState(initialClient);
+  const [stakeholders, setStakeholders] = useState<Stakeholder[]>(initialStakeholders);
+  const [tasks, setTasks] = useState<RecurringTask[]>(initialTasks);
+  const [platforms, setPlatforms] = useState(initialPlatforms);
+  const [customPlatform, setCustomPlatform] = useState("");
+  const [issues, setIssues] = useState<Issue[]>(initialIssues);
+  const [prefs, setPrefs] = useState(initialPrefs);
+  const [kt, setKT] = useState(initialKT);
+  const [activeTab, setActiveTab] = useState<"plan" | "insights" | "structure">("plan");
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>(["Q3-QBR-Notes.pdf", "SOP_Marketo_Audit_v4.docx", "Stakeholder_Emails_Sept.eml"]);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const targetTabs = [
+    "Executive Summary", "Client Overview", "Stakeholders", "Recurring Tasks",
+    "Platforms", "Open Issues", "Client Preferences", "KT Checklist",
+  ];
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    setUploadedFiles((p) => [...p, ...Array.from(files).map((f) => f.name)]);
+  };
+
+  const generateExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    const exec = [
+      ["B2B Client Handover — Executive Summary"],
+      [],
+      ["Client", client.name],
+      ["Industry", client.industry],
+      ["Region", client.region],
+      ["Services", client.services],
+      [],
+      ["Time Saved per Handover", "6.5 hours"],
+      ["Account Risk Mitigation Score", "98%"],
+      [],
+      ["30-Day Transition Plan"],
+      ["Week 1", "Stakeholder intros, access provisioning, platform audit kickoff"],
+      ["Week 2", "Shadow recurring tasks, validate SOPs, baseline reporting setup"],
+      ["Week 3", "Co-execute deliverables with outgoing lead, resolve top 3 open issues"],
+      ["Week 4", "Full ownership transfer, executive QBR readout, 90-day roadmap delivery"],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exec), "Executive Summary");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["Field", "Value"],
+      ["Client Name", client.name],
+      ["Industry", client.industry],
+      ["Region", client.region],
+      ["Services Delivered", client.services],
+    ]), "Client Overview");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      stakeholders.map((s) => ({ Name: s.name, Role: s.role, Email: s.email, Notes: s.notes }))
+    ), "Stakeholders");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      tasks.map((t) => ({ Task: t.task, Frequency: t.frequency, Instructions: t.instructions }))
+    ), "Recurring Tasks");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      Object.entries(platforms).map(([Platform, Enabled]) => ({ Platform, Enabled: Enabled ? "Yes" : "No" }))
+    ), "Platforms");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      issues.map((i) => ({ Issue: i.issue, Priority: i.priority, Status: i.status }))
+    ), "Open Issues");
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ["Preference", "Detail"],
+      ["Communication Style", prefs.communication],
+      ["Reporting Expectations", prefs.reporting],
+      ["Escalation Path", prefs.escalation],
+    ]), "Client Preferences");
+
+    const ktRows = [
+      ["Category", "Notes", "Reviewed"],
+      ["Tribal Knowledge", kt.tribal, "☐"],
+      ["Watch-outs", kt.watchouts, "☐"],
+      ["Historical Context", kt.history, "☐"],
+      ["Stakeholders introduced", "", "☐"],
+      ["Platform access verified", "", "☐"],
+      ["Recurring tasks shadowed", "", "☐"],
+      ["Open issues briefed", "", "☐"],
+      ["Executive QBR scheduled", "", "☐"],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ktRows), "KT Checklist");
+
+    const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([buf], { type: "application/octet-stream" }),
+      `Handover_${client.name.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top Banner */}
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto max-w-[1600px] px-6 py-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-5">
+              <Logo />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand" /> Handover OS
+                  </span>
+                  <span className="text-[11px] font-medium text-muted-foreground">v2.4 · Enterprise</span>
+                </div>
+                <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-ink lg:text-[28px]">
+                  B2B Client Handover & Account Transition
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                  Capture institutional knowledge, polish it with AI, and ship a board-ready Excel handover in minutes — not weeks.
+                </p>
+              </div>
+            </div>
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`group flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed px-5 py-4 transition-all lg:w-[460px] ${
+                dragOver ? "border-brand bg-brand/5" : "border-border bg-muted/40 hover:border-brand/60 hover:bg-brand/5"
+              }`}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-ink text-white">
+                <Upload className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-ink">Upload Existing Documents</p>
+                <p className="text-xs text-muted-foreground">Drag SOPs, notes, emails — or click to browse</p>
+                {uploadedFiles.length > 0 && (
+                  <p className="mt-1 truncate text-[11px] font-medium text-brand">
+                    {uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} attached · {uploadedFiles.slice(-1)[0]}
+                  </p>
+                )}
+              </div>
+              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main grid */}
+      <main className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          {/* LEFT PANEL */}
+          <div className="space-y-5">
+            <Section icon={<Briefcase className="h-4 w-4" />} title="Client Info" subtitle="Account fundamentals">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field label="Client Name"><input className="input-base" value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} /></Field>
+                <Field label="Industry"><input className="input-base" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
+                <Field label="Region"><input className="input-base" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
+                <Field label="Services"><input className="input-base" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
+              </div>
+            </Section>
+
+            <Section icon={<Users className="h-4 w-4" />} title="Stakeholders" subtitle="Key contacts & decision makers"
+              action={<AddBtn onClick={() => setStakeholders([...stakeholders, { name: "", role: "", email: "", notes: "" }])} />}>
+              <div className="space-y-3">
+                {stakeholders.map((s, i) => (
+                  <RowCard key={i} onRemove={() => setStakeholders(stakeholders.filter((_, x) => x !== i))}>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input className="input-base" placeholder="Name" value={s.name} onChange={(e) => updateArr(setStakeholders, stakeholders, i, { ...s, name: e.target.value })} />
+                      <input className="input-base" placeholder="Role" value={s.role} onChange={(e) => updateArr(setStakeholders, stakeholders, i, { ...s, role: e.target.value })} />
+                      <input className="input-base md:col-span-2" placeholder="Email" value={s.email} onChange={(e) => updateArr(setStakeholders, stakeholders, i, { ...s, email: e.target.value })} />
+                      <textarea className="input-base md:col-span-2" rows={2} placeholder="Notes" value={s.notes} onChange={(e) => updateArr(setStakeholders, stakeholders, i, { ...s, notes: e.target.value })} />
+                    </div>
+                  </RowCard>
+                ))}
+              </div>
+            </Section>
+
+            <Section icon={<ListChecks className="h-4 w-4" />} title="Recurring Tasks" subtitle="Operational cadence"
+              action={<AddBtn onClick={() => setTasks([...tasks, { task: "", frequency: "", instructions: "" }])} />}>
+              <div className="space-y-3">
+                {tasks.map((t, i) => (
+                  <RowCard key={i} onRemove={() => setTasks(tasks.filter((_, x) => x !== i))}>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input className="input-base" placeholder="Task Name" value={t.task} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, task: e.target.value })} />
+                      <input className="input-base" placeholder="Frequency" value={t.frequency} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, frequency: e.target.value })} />
+                      <textarea className="input-base md:col-span-2" rows={2} placeholder="Instructions" value={t.instructions} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, instructions: e.target.value })} />
+                    </div>
+                  </RowCard>
+                ))}
+              </div>
+            </Section>
+
+            <Section icon={<Layers className="h-4 w-4" />} title="Platforms Checklist" subtitle="Tech stack in scope">
+              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+                {Object.entries(platforms).map(([name, on]) => (
+                  <label key={name} className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-all ${
+                    on ? "border-brand/40 bg-brand/5 text-slate-ink" : "border-border bg-card text-muted-foreground hover:border-slate-soft/40"
+                  }`}>
+                    <input type="checkbox" checked={on} onChange={(e) => setPlatforms({ ...platforms, [name]: e.target.checked })}
+                      className="h-4 w-4 accent-brand" />
+                    <span className="font-medium">{name}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <input className="input-base" placeholder="Add custom platform…" value={customPlatform} onChange={(e) => setCustomPlatform(e.target.value)} />
+                <button
+                  onClick={() => { if (customPlatform.trim()) { setPlatforms({ ...platforms, [customPlatform.trim()]: true }); setCustomPlatform(""); }}}
+                  className="shrink-0 rounded-lg bg-slate-ink px-4 text-sm font-medium text-white hover:bg-slate-ink/90">
+                  Add
+                </button>
+              </div>
+            </Section>
+
+            <Section icon={<AlertTriangle className="h-4 w-4" />} title="Open Issues" subtitle="Active risks & blockers"
+              action={<AddBtn onClick={() => setIssues([...issues, { issue: "", priority: "Medium", status: "Open" }])} />}>
+              <div className="space-y-2">
+                {issues.map((it, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2">
+                    <input className="input-base col-span-7" placeholder="Issue" value={it.issue} onChange={(e) => updateArr(setIssues, issues, i, { ...it, issue: e.target.value })} />
+                    <select className="input-base col-span-2" value={it.priority} onChange={(e) => updateArr(setIssues, issues, i, { ...it, priority: e.target.value })}>
+                      <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+                    </select>
+                    <select className="input-base col-span-2" value={it.status} onChange={(e) => updateArr(setIssues, issues, i, { ...it, status: e.target.value })}>
+                      <option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option>
+                    </select>
+                    <button onClick={() => setIssues(issues.filter((_, x) => x !== i))}
+                      className="col-span-1 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-brand hover:text-brand">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section icon={<MessageSquare className="h-4 w-4" />} title="Client Preferences" subtitle="How they like to work">
+              <div className="space-y-4">
+                <Field label="Communication Style"><textarea rows={2} className="input-base" value={prefs.communication} onChange={(e) => setPrefs({ ...prefs, communication: e.target.value })} /></Field>
+                <Field label="Reporting Expectations"><textarea rows={2} className="input-base" value={prefs.reporting} onChange={(e) => setPrefs({ ...prefs, reporting: e.target.value })} /></Field>
+                <Field label="Escalation Path"><textarea rows={2} className="input-base" value={prefs.escalation} onChange={(e) => setPrefs({ ...prefs, escalation: e.target.value })} /></Field>
+              </div>
+            </Section>
+
+            <Section icon={<BookOpen className="h-4 w-4" />} title="Knowledge Transfer Notes" subtitle="The things only the outgoing lead knows">
+              <div className="space-y-4">
+                <Field label="Tribal Knowledge"><textarea rows={3} className="input-base" value={kt.tribal} onChange={(e) => setKT({ ...kt, tribal: e.target.value })} /></Field>
+                <Field label="Watch-outs"><textarea rows={3} className="input-base" value={kt.watchouts} onChange={(e) => setKT({ ...kt, watchouts: e.target.value })} /></Field>
+                <Field label="Historical Context"><textarea rows={3} className="input-base" value={kt.history} onChange={(e) => setKT({ ...kt, history: e.target.value })} /></Field>
+              </div>
+            </Section>
+          </div>
+
+          {/* RIGHT PANEL */}
+          <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
+            {/* Metrics */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <MetricCard icon={<Clock className="h-5 w-5" />} value="6.5 hrs" label="Time Saved per Handover" trend="↓ 82% vs manual" tone="dark" />
+              <MetricCard icon={<ShieldCheck className="h-5 w-5" />} value="98%" label="Account Risk Mitigation" trend="↑ AI-validated coverage" tone="brand" />
+            </div>
+
+            {/* AI Preview */}
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
+              <div className="flex items-center justify-between border-b border-border bg-muted/40 px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-brand" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-ink">AI Transformation Preview</span>
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">GPT-5 · Polished</span>
+              </div>
+
+              <div className="flex border-b border-border bg-card px-2">
+                {([
+                  ["plan", "Executive Summary & 30-Day Plan"],
+                  ["insights", "Polished Account Insights"],
+                  ["structure", "Excel Structure Review"],
+                ] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setActiveTab(k)}
+                    className={`relative px-4 py-3 text-[12px] font-semibold transition-colors ${
+                      activeTab === k ? "text-slate-ink" : "text-muted-foreground hover:text-slate-ink"
+                    }`}>
+                    {label}
+                    {activeTab === k && <span className="absolute inset-x-3 -bottom-px h-0.5 bg-brand" />}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-5">
+                {activeTab === "plan" && <PlanTab clientName={client.name} />}
+                {activeTab === "insights" && <InsightsTab />}
+                {activeTab === "structure" && <StructureTab tabs={targetTabs} />}
+              </div>
+            </div>
+
+            {/* Action */}
+            <button
+              onClick={generateExcel}
+              className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-brand px-6 py-5 text-base font-semibold text-brand-foreground shadow-brand transition-all hover:translate-y-[-1px] hover:bg-brand/95 active:translate-y-0"
+            >
+              <FileSpreadsheet className="h-5 w-5" />
+              <span>Generate &amp; Download Excel</span>
+              <Download className="h-5 w-5 transition-transform group-hover:translate-y-0.5" />
+              <span className="ml-2 rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">8 tabs · .xlsx</span>
+            </button>
+
+            <p className="text-center text-[11px] text-muted-foreground">
+              Generates a fully-structured workbook from your live form data · No data leaves your browser
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <footer className="mt-8 border-t border-border bg-card">
+        <div className="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-2 px-6 py-4 text-xs text-muted-foreground sm:flex-row">
+          <span>© Handover OS — Enterprise Client Transition Platform</span>
+          <span>SOC 2 Type II · ISO 27001 · GDPR-ready</span>
+        </div>
+      </footer>
     </div>
   );
+}
+
+// ---------- Sub-components ----------
+function Logo() {
+  return (
+    <div className="flex shrink-0 items-center gap-3">
+      <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-slate-ink shadow-elevated">
+        <div className="absolute inset-1 rounded-lg border border-white/10" />
+        <span className="relative text-2xl font-black tracking-tight text-white">
+          H<span className="text-brand">·</span>O
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Section({ icon, title, subtitle, action, children }: {
+  icon: React.ReactNode; title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
+      <header className="flex items-center justify-between border-b border-border px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-ink text-white">{icon}</span>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-ink">{title}</h3>
+            {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </header>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="block"><span className="label-base">{label}</span>{children}</label>;
+}
+
+function RowCard({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
+  return (
+    <div className="group relative rounded-lg border border-border bg-muted/30 p-3 transition-colors hover:border-slate-soft/40">
+      <button onClick={onRemove} className="absolute right-2 top-2 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-brand/10 hover:text-brand group-hover:opacity-100">
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+      {children}
+    </div>
+  );
+}
+
+function AddBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-slate-ink transition-colors hover:border-brand hover:text-brand">
+      <Plus className="h-3 w-3" /> Add
+    </button>
+  );
+}
+
+function MetricCard({ icon, value, label, trend, tone }: {
+  icon: React.ReactNode; value: string; label: string; trend: string; tone: "dark" | "brand";
+}) {
+  const dark = tone === "dark";
+  return (
+    <div className={`relative overflow-hidden rounded-xl p-5 shadow-elevated ${dark ? "bg-slate-ink text-white" : "bg-brand text-brand-foreground"}`}>
+      <div className="flex items-start justify-between">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${dark ? "bg-white/10" : "bg-white/15"}`}>{icon}</span>
+        <span className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? "text-white/60" : "text-white/80"}`}>Executive</span>
+      </div>
+      <div className="mt-5 text-[34px] font-bold leading-none tracking-tight">{value}</div>
+      <div className={`mt-1.5 text-sm font-medium ${dark ? "text-white/85" : "text-white/95"}`}>{label}</div>
+      <div className={`mt-3 text-[11px] font-medium ${dark ? "text-white/55" : "text-white/80"}`}>{trend}</div>
+      <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-white/5" />
+    </div>
+  );
+}
+
+function PlanTab({ clientName }: { clientName: string }) {
+  const weeks = [
+    { w: "Week 1", title: "Discovery & Access", items: ["Stakeholder intro calls (4 contacts)", "Provision platform access (Marketo, SFDC, 6sense, ON24)", "Baseline audit of active programs"] },
+    { w: "Week 2", title: "Shadow & Validate", items: ["Shadow weekly Marketo audit", "Validate SOPs against live workflows", "Stand up reporting baseline in Looker"] },
+    { w: "Week 3", title: "Co-Execute", items: ["Co-own deliverables with outgoing lead", "Resolve top 3 open issues (SFDC sync, GDPR, intent flow)", "Run first ON24 webinar end-to-end"] },
+    { w: "Week 4", title: "Ownership Transfer", items: ["Full handover sign-off with VP Demand Gen", "Executive QBR readout to CMO", "Deliver 90-day forward roadmap"] },
+  ];
+  return (
+    <div>
+      <div className="mb-4 rounded-lg border border-border bg-muted/40 p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand">Executive Summary</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-ink">
+          <strong>{clientName}</strong> transitions from outgoing lead to new account team across a 30-day structured handover.
+          The plan prioritizes zero-disruption to in-flight campaigns, full institutional knowledge transfer, and executive-grade
+          reporting continuity. Risk is mitigated through phased shadowing and co-execution before full ownership transfer.
+        </p>
+      </div>
+      <div className="relative space-y-3 pl-6">
+        <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
+        {weeks.map((w, i) => (
+          <div key={i} className="relative">
+            <div className="absolute -left-[18px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand ring-4 ring-card" />
+            <div className="rounded-lg border border-border bg-card p-3.5">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-brand" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-brand">{w.w}</span>
+                <span className="text-sm font-semibold text-slate-ink">· {w.title}</span>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {w.items.map((it, k) => (
+                  <li key={k} className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-ink/60" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InsightsTab() {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Raw Input</p>
+        <p className="mt-1.5 text-[13px] italic leading-relaxed text-slate-soft">
+          "margaret hates when ppl over-promise on attribution lol. last agency burned her. always show ranges, never single touch.
+          also dont schedule launches during fiscal close (last week of mar/jun/sep/dec) — legal needs 5 biz days for gated stuff"
+        </p>
+      </div>
+      <div className="flex justify-center">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white shadow-brand">
+          <Sparkles className="h-3.5 w-3.5" />
+        </div>
+      </div>
+      <div className="rounded-lg border border-brand/20 bg-gradient-to-br from-brand/5 to-transparent p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-brand">AI-Polished · Compliance-Ready</p>
+        <div className="mt-2 space-y-2.5 text-[13px] leading-relaxed text-slate-ink">
+          <p>
+            <strong>Executive Sponsor Sensitivity:</strong> The VP of Demand Generation has experienced material dissatisfaction
+            with previous agency partners regarding marketing attribution methodology. All performance reporting must present
+            results with conservative confidence ranges. Single-touch attribution models must not be presented without
+            multi-touch contextualization.
+          </p>
+          <p>
+            <strong>Operational Scheduling Constraints:</strong> Campaign launches must not be scheduled during the client's
+            fiscal close periods, defined as the final calendar week of March, June, September, and December. Additionally,
+            all gated content assets require a minimum five (5) business day legal review prior to publication.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StructureTab({ tabs }: { tabs: string[] }) {
+  const meta = [
+    "Board-ready overview · KPIs · 30-day plan",
+    "Account fundamentals & service scope",
+    "Contact directory with roles & notes",
+    "Operational cadence & SOPs",
+    "Tech stack inventory & access",
+    "Active risks with priority & status",
+    "Communication, reporting, escalation",
+    "Sign-off checklist for handover completion",
+  ];
+  return (
+    <div>
+      <p className="mb-3 text-[13px] text-muted-foreground">
+        Your downloadable workbook contains <strong className="text-slate-ink">8 fully-structured tabs</strong>, each
+        formatted for direct use in QBRs, executive reviews, and account onboarding.
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {tabs.map((t, i) => (
+          <div key={t} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-brand/40">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-ink text-[11px] font-bold text-white">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-slate-ink">{t}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{meta[i]}</p>
+            </div>
+            <FileText className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function updateArr<T>(setter: (v: T[]) => void, arr: T[], i: number, v: T) {
+  setter(arr.map((x, k) => (k === i ? v : x)));
 }
