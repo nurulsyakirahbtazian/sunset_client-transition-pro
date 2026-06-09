@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import {
   Upload, FileSpreadsheet, Users, Briefcase, ListChecks, AlertTriangle,
@@ -98,72 +98,295 @@ function Dashboard() {
   };
 
   const generateExcel = () => {
+    // ----- Styling helpers -----
+    const BRAND = "FF0F0F";
+    const INK = "1A2233";
+    const SUBINK = "3A4456";
+    const SOFT = "F4F6FA";
+    const BORDER_GRAY = "D8DEE7";
+    const ZEBRA = "FAFBFD";
+
+    const border = {
+      top: { style: "thin", color: { rgb: BORDER_GRAY } },
+      bottom: { style: "thin", color: { rgb: BORDER_GRAY } },
+      left: { style: "thin", color: { rgb: BORDER_GRAY } },
+      right: { style: "thin", color: { rgb: BORDER_GRAY } },
+    };
+
+    const titleStyle = {
+      font: { name: "Calibri", sz: 18, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: INK } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1 },
+    };
+    const subtitleStyle = {
+      font: { name: "Calibri", sz: 10, italic: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: SUBINK } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1 },
+    };
+    const sectionStyle = {
+      font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: BRAND } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1 },
+      border,
+    };
+    const headerStyle = {
+      font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: INK } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
+      border,
+    };
+    const labelStyle = {
+      font: { name: "Calibri", sz: 10, bold: true, color: { rgb: INK } },
+      fill: { fgColor: { rgb: SOFT } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
+      border,
+    };
+    const valueStyle = (zebra = false) => ({
+      font: { name: "Calibri", sz: 10, color: { rgb: SUBINK } },
+      fill: { fgColor: { rgb: zebra ? ZEBRA : "FFFFFF" } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
+      border,
+    });
+    const metricLabelStyle = {
+      font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: INK } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
+      border,
+    };
+    const metricValueStyle = {
+      font: { name: "Calibri", sz: 16, bold: true, color: { rgb: BRAND } },
+      fill: { fgColor: { rgb: "FFFFFF" } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1 },
+      border,
+    };
+    const priorityStyle = (p: string) => {
+      const map: Record<string, string> = {
+        Critical: "C81E1E", High: "E0651A", Medium: "B58900", Low: "4A6B8A",
+      };
+      return {
+        font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: map[p] || "4A6B8A" } },
+        alignment: { vertical: "center", horizontal: "center" },
+        border,
+      };
+    };
+    const statusStyle = (s: string) => {
+      const map: Record<string, string> = {
+        Open: "EEF2F7", "In Progress": "DCEEFB", Escalated: "FDE2E2", Resolved: "D9F2E1",
+      };
+      const fg: Record<string, string> = {
+        Open: SUBINK, "In Progress": "1E5A93", Escalated: "9B1C1C", Resolved: "1F6B3B",
+      };
+      return {
+        font: { name: "Calibri", sz: 10, bold: true, color: { rgb: fg[s] || SUBINK } },
+        fill: { fgColor: { rgb: map[s] || "EEF2F7" } },
+        alignment: { vertical: "center", horizontal: "center" },
+        border,
+      };
+    };
+    const checkStyle = {
+      font: { name: "Calibri", sz: 14, bold: true, color: { rgb: BRAND } },
+      fill: { fgColor: { rgb: SOFT } },
+      alignment: { vertical: "center", horizontal: "center" },
+      border,
+    };
+    const footerStyle = {
+      font: { name: "Calibri", sz: 9, italic: true, color: { rgb: "8892A6" } },
+      alignment: { vertical: "center", horizontal: "left", indent: 1 },
+    };
+
+    // Build a sheet from AOA + per-cell style map
+    type CellSpec = { v: any; s?: any; t?: string };
+    const buildSheet = (
+      rows: (CellSpec | string | number | null)[][],
+      opts: {
+        cols: { wch: number }[];
+        rowHeights?: Record<number, number>;
+        merges?: XLSX.Range[];
+      }
+    ): XLSX.WorkSheet => {
+      const aoa = rows.map((r) => r.map((c) => (c && typeof c === "object" ? (c as CellSpec).v : c)));
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      rows.forEach((row, r) => {
+        row.forEach((cell, c) => {
+          if (cell && typeof cell === "object" && (cell as CellSpec).s) {
+            const addr = XLSX.utils.encode_cell({ r, c });
+            if (ws[addr]) ws[addr].s = (cell as CellSpec).s;
+          }
+        });
+      });
+      ws["!cols"] = opts.cols;
+      if (opts.merges) ws["!merges"] = opts.merges;
+      ws["!rows"] = Array.from({ length: rows.length }, (_, i) => ({
+        hpt: opts.rowHeights?.[i] ?? 20,
+      }));
+      return ws;
+    };
+
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      year: "numeric", month: "long", day: "numeric",
+    });
+
     const wb = XLSX.utils.book_new();
+    wb.Props = {
+      Title: `Client Handover — ${client.name}`,
+      Subject: "B2B Client Handover & Account Transition",
+      Author: "Handover OS",
+      Company: "Handover OS",
+      CreatedDate: new Date(),
+    };
 
-    const exec = [
-      ["B2B Client Handover — Executive Summary"],
-      [],
-      ["Client", client.name],
-      ["Industry", client.industry],
-      ["Region", client.region],
-      ["Services", client.services],
-      [],
-      ["Time Saved per Handover", "6.5 hours"],
-      ["Account Risk Mitigation Score", "98%"],
-      [],
-      ["30-Day Transition Plan"],
-      ["Week 1", "Stakeholder intros, access provisioning, platform audit kickoff"],
-      ["Week 2", "Shadow recurring tasks, validate SOPs, baseline reporting setup"],
-      ["Week 3", "Co-execute deliverables with outgoing lead, resolve top 3 open issues"],
-      ["Week 4", "Full ownership transfer, executive QBR readout, 90-day roadmap delivery"],
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exec), "Executive Summary");
+    // ============ 1. EXECUTIVE SUMMARY ============
+    {
+      const rows: (CellSpec | null)[][] = [
+        [{ v: "B2B CLIENT HANDOVER  —  EXECUTIVE SUMMARY", s: titleStyle }, null, null, null],
+        [{ v: `${client.name}  ·  Prepared ${dateStr}  ·  Confidential`, s: subtitleStyle }, null, null, null],
+        [null, null, null, null],
+        [{ v: "ACCOUNT SNAPSHOT", s: sectionStyle }, null, null, null],
+        [{ v: "Client", s: labelStyle }, { v: client.name, s: valueStyle() }, { v: "Industry", s: labelStyle }, { v: client.industry, s: valueStyle() }],
+        [{ v: "Region", s: labelStyle }, { v: client.region, s: valueStyle(true) }, { v: "Services", s: labelStyle }, { v: client.services, s: valueStyle(true) }],
+        [null, null, null, null],
+        [{ v: "EXECUTIVE METRICS", s: sectionStyle }, null, null, null],
+        [{ v: "Time Saved per Handover", s: metricLabelStyle }, { v: "6.5 Hours", s: metricValueStyle }, { v: "Account Risk Mitigation Score", s: metricLabelStyle }, { v: "98%", s: metricValueStyle }],
+        [null, null, null, null],
+        [{ v: "30-DAY TRANSITION PLAN", s: sectionStyle }, null, null, null],
+        [{ v: "Week", s: headerStyle }, { v: "Phase", s: headerStyle }, { v: "Key Deliverables", s: headerStyle }, { v: "Owner", s: headerStyle }],
+        [{ v: "Week 1", s: { ...valueStyle(), font: { ...valueStyle().font, bold: true, color: { rgb: BRAND } } } }, { v: "Discovery & Access", s: valueStyle() }, { v: "Stakeholder intros, access provisioning, platform audit kickoff", s: valueStyle() }, { v: "Incoming Lead", s: valueStyle() }],
+        [{ v: "Week 2", s: { ...valueStyle(true), font: { ...valueStyle(true).font, bold: true, color: { rgb: BRAND } } } }, { v: "Shadow & Validate", s: valueStyle(true) }, { v: "Shadow recurring tasks, validate SOPs, baseline reporting setup", s: valueStyle(true) }, { v: "Joint", s: valueStyle(true) }],
+        [{ v: "Week 3", s: { ...valueStyle(), font: { ...valueStyle().font, bold: true, color: { rgb: BRAND } } } }, { v: "Co-Execute", s: valueStyle() }, { v: "Co-execute deliverables with outgoing lead, resolve top 3 open issues", s: valueStyle() }, { v: "Joint", s: valueStyle() }],
+        [{ v: "Week 4", s: { ...valueStyle(true), font: { ...valueStyle(true).font, bold: true, color: { rgb: BRAND } } } }, { v: "Ownership Transfer", s: valueStyle(true) }, { v: "Full ownership transfer, executive QBR readout, 90-day roadmap delivery", s: valueStyle(true) }, { v: "Incoming Lead", s: valueStyle(true) }],
+        [null, null, null, null],
+        [{ v: "Generated by Handover OS  ·  handoveros.com  ·  Confidential & Proprietary", s: footerStyle }, null, null, null],
+      ];
+      const ws = buildSheet(rows, {
+        cols: [{ wch: 26 }, { wch: 38 }, { wch: 26 }, { wch: 38 }],
+        rowHeights: { 0: 36, 1: 22, 3: 24, 7: 24, 8: 38, 10: 24, 11: 24 },
+        merges: [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+          { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+          { s: { r: 7, c: 0 }, e: { r: 7, c: 3 } },
+          { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
+          { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
+        ],
+      });
+      (ws as any)["!sheetView"] = [{ showGridLines: false }];
+      XLSX.utils.book_append_sheet(wb, ws, "Executive Summary");
+    }
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ["Field", "Value"],
-      ["Client Name", client.name],
-      ["Industry", client.industry],
-      ["Region", client.region],
-      ["Services Delivered", client.services],
-    ]), "Client Overview");
+    // Helper for standard styled table sheets
+    const makeTableSheet = (
+      title: string,
+      headers: string[],
+      dataRows: (string | { v: string; s: any })[][],
+      cols: number[]
+    ) => {
+      const rows: (CellSpec | null)[][] = [
+        [{ v: title.toUpperCase(), s: titleStyle }, ...Array(headers.length - 1).fill(null)],
+        [{ v: `${client.name}  ·  ${dateStr}`, s: subtitleStyle }, ...Array(headers.length - 1).fill(null)],
+        Array(headers.length).fill(null),
+        headers.map((h) => ({ v: h, s: headerStyle })),
+        ...dataRows.map((row, i) =>
+          row.map((cell) =>
+            typeof cell === "string" ? { v: cell, s: valueStyle(i % 2 === 1) } : cell
+          )
+        ),
+      ];
+      const ws = buildSheet(rows, {
+        cols: cols.map((wch) => ({ wch })),
+        rowHeights: { 0: 32, 1: 20, 3: 24 },
+        merges: [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+        ],
+      });
+      (ws as any)["!sheetView"] = [{ showGridLines: false }];
+      ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 3, c: 0 }, e: { r: 3 + dataRows.length, c: headers.length - 1 } }) };
+      ws["!freeze"] = { xSplit: 0, ySplit: 4 };
+      return ws;
+    };
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      stakeholders.map((s) => ({ Name: s.name, Role: s.role, Email: s.email, Notes: s.notes }))
+    // 2. CLIENT OVERVIEW
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Client Overview", ["Field", "Value"],
+      [
+        ["Client Name", client.name],
+        ["Industry", client.industry],
+        ["Region", client.region],
+        ["Services Delivered", client.services],
+      ], [28, 60]
+    ), "Client Overview");
+
+    // 3. STAKEHOLDERS
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Stakeholders", ["Name", "Role", "Email", "Notes"],
+      stakeholders.map((s) => [s.name, s.role, s.email, s.notes]),
+      [24, 28, 32, 60]
     ), "Stakeholders");
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      tasks.map((t) => ({ Task: t.task, Frequency: t.frequency, Instructions: t.instructions }))
+    // 4. RECURRING TASKS
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Recurring Tasks", ["Task", "Frequency", "Instructions"],
+      tasks.map((t) => [t.task, t.frequency, t.instructions]),
+      [34, 26, 70]
     ), "Recurring Tasks");
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      Object.entries(platforms).map(([Platform, Enabled]) => ({ Platform, Enabled: Enabled ? "Yes" : "No" }))
+    // 5. PLATFORMS
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Platforms", ["Platform", "Status"],
+      Object.entries(platforms).map(([p, on]) => [
+        p,
+        {
+          v: on ? "✓  Active" : "—  Not in scope",
+          s: {
+            font: { name: "Calibri", sz: 10, bold: true, color: { rgb: on ? "1F6B3B" : "8892A6" } },
+            fill: { fgColor: { rgb: on ? "D9F2E1" : SOFT } },
+            alignment: { vertical: "center", horizontal: "left", indent: 1 },
+            border,
+          },
+        },
+      ]), [36, 24]
     ), "Platforms");
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      issues.map((i) => ({ Issue: i.issue, Priority: i.priority, Status: i.status }))
+    // 6. OPEN ISSUES (with colored priority/status pills)
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Open Issues", ["Issue", "Priority", "Status"],
+      issues.map((it) => [
+        it.issue,
+        { v: it.priority.toUpperCase(), s: priorityStyle(it.priority) },
+        { v: it.status, s: statusStyle(it.status) },
+      ]), [70, 16, 18]
     ), "Open Issues");
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ["Preference", "Detail"],
-      ["Communication Style", prefs.communication],
-      ["Reporting Expectations", prefs.reporting],
-      ["Escalation Path", prefs.escalation],
-    ]), "Client Preferences");
+    // 7. CLIENT PREFERENCES
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Client Preferences", ["Preference", "Detail"],
+      [
+        ["Communication Style", prefs.communication],
+        ["Reporting Expectations", prefs.reporting],
+        ["Escalation Path", prefs.escalation],
+      ], [28, 80]
+    ), "Client Preferences");
 
-    const ktRows = [
-      ["Category", "Notes", "Reviewed"],
-      ["Tribal Knowledge", kt.tribal, "☐"],
-      ["Watch-outs", kt.watchouts, "☐"],
-      ["Historical Context", kt.history, "☐"],
-      ["Stakeholders introduced", "", "☐"],
-      ["Platform access verified", "", "☐"],
-      ["Recurring tasks shadowed", "", "☐"],
-      ["Open issues briefed", "", "☐"],
-      ["Executive QBR scheduled", "", "☐"],
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ktRows), "KT Checklist");
+    // 8. KT CHECKLIST (with check column)
+    {
+      const ktData: (string | { v: string; s: any })[][] = [
+        ["Tribal Knowledge", kt.tribal, { v: "☐", s: checkStyle }],
+        ["Watch-outs", kt.watchouts, { v: "☐", s: checkStyle }],
+        ["Historical Context", kt.history, { v: "☐", s: checkStyle }],
+        ["Stakeholders introduced", "", { v: "☐", s: checkStyle }],
+        ["Platform access verified", "", { v: "☐", s: checkStyle }],
+        ["Recurring tasks shadowed", "", { v: "☐", s: checkStyle }],
+        ["Open issues briefed", "", { v: "☐", s: checkStyle }],
+        ["Executive QBR scheduled", "", { v: "☐", s: checkStyle }],
+      ];
+      XLSX.utils.book_append_sheet(wb, makeTableSheet(
+        "KT Checklist", ["Category", "Notes", "Done"],
+        ktData, [28, 70, 10]
+      ), "KT Checklist");
+    }
 
-    const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
     saveAs(new Blob([buf], { type: "application/octet-stream" }),
       `Handover_${client.name.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
