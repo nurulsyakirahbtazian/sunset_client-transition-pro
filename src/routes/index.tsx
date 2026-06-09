@@ -24,52 +24,37 @@ type RecurringTask = { task: string; frequency: string; instructions: string };
 type Issue = { issue: string; priority: string; status: string };
 
 const initialClient = {
-  name: "Northwind Industrial Group",
-  industry: "Industrial Manufacturing / IoT",
-  region: "North America (HQ: Chicago, IL)",
-  services: "ABM Strategy, Marketing Automation, Demand Gen, Webinar Ops",
+  name: "",
+  industry: "",
+  region: "",
+  services: "",
 };
 
-const initialStakeholders: Stakeholder[] = [
-  { name: "Margaret Chen", role: "VP, Demand Generation", email: "m.chen@northwind.example", notes: "Primary decision maker. Prefers Tuesday status calls. Avoid Fridays." },
-  { name: "David Okafor", role: "Sr. Marketing Ops Manager", email: "d.okafor@northwind.example", notes: "Day-to-day contact for Marketo + 6sense. Highly technical." },
-  { name: "Priya Raman", role: "Director, Field Marketing", email: "p.raman@northwind.example", notes: "Owns ON24 webinar program. Loops in for EMEA events." },
-  { name: "Jordan Blake", role: "CMO", email: "j.blake@northwind.example", notes: "Executive sponsor — QBR audience only. Wants pipeline impact framed in $." },
-];
+const initialStakeholders: Stakeholder[] = [];
 
-const initialTasks: RecurringTask[] = [
-  { task: "Weekly Marketo Program Audit", frequency: "Weekly — Mondays", instructions: "Review all active programs, check smart campaign flow steps, validate UTM consistency, log anomalies in shared tracker." },
-  { task: "6sense Account Scoring Review", frequency: "Bi-weekly", instructions: "Pull top 50 surging accounts, cross-reference SFDC ownership, route to AE via ABM workflow." },
-  { task: "Monthly Executive Pipeline Report", frequency: "Monthly — 1st business day", instructions: "Compile MQL→SQL→Opp velocity, attach Marketo + SFDC dashboards, deliver via Loom + PDF." },
-  { task: "ON24 Webinar QA", frequency: "Per event (~2x/month)", instructions: "Run T-72hr tech check, validate SFDC sync, post-event upload recording + drip enrollment." },
-];
+const initialTasks: RecurringTask[] = [];
 
 const initialPlatforms: Record<string, boolean> = {
-  Marketo: true,
-  Salesforce: true,
-  "6sense": true,
-  ON24: true,
-  "Custom (Snowflake + dbt)": true,
+  Marketo: false,
+  Salesforce: false,
+  "6sense": false,
+  ON24: false,
+  "HubSpot": false,
   "LinkedIn Campaign Manager": false,
 };
 
-const initialIssues: Issue[] = [
-  { issue: "Marketo–SFDC sync lag (>30 min) on Lead object", priority: "High", status: "In Progress" },
-  { issue: "6sense intent data not flowing into Account Engagement dashboard", priority: "Medium", status: "Open" },
-  { issue: "EMEA webinar registrants missing GDPR consent flag", priority: "Critical", status: "Escalated" },
-  { issue: "Outdated nurture: 'Q2 Launch' still active post-campaign", priority: "Low", status: "Open" },
-];
+const initialIssues: Issue[] = [];
 
 const initialPrefs = {
-  communication: "Slack for daily ops (channel #northwind-ops). Email for anything contractual. Weekly Tuesday 10am CT status call (30 min, agenda 24hrs in advance).",
-  reporting: "Bi-weekly performance snapshot (Looker). Monthly executive deck (PDF + Loom walkthrough). Quarterly business review with CMO + VP Demand Gen.",
-  escalation: "Tier 1: Account Lead → Tier 2: Engagement Director (within 4hrs) → Tier 3: VP Client Services (same day). Critical platform outages: page on-call immediately.",
+  communication: "",
+  reporting: "",
+  escalation: "",
 };
 
 const initialKT = {
-  tribal: "Margaret was burned by a previous agency that over-promised on attribution. Always frame results with conservative ranges. Never present single-touch attribution without context.",
-  watchouts: "Avoid scheduling launches during their fiscal close (last week of Mar/Jun/Sep/Dec). Their legal team reviews all gated assets — build in 5 business days.",
-  history: "Account onboarded Q3 2023. Migrated from HubSpot → Marketo in early 2024. Previous lead (J. Martinez) departed Aug 2025; institutional knowledge gap in webinar ops — see ON24 runbook v3.",
+  tribal: "",
+  watchouts: "",
+  history: "",
 };
 
 // ---------- Component ----------
@@ -83,7 +68,7 @@ function Dashboard() {
   const [prefs, setPrefs] = useState(initialPrefs);
   const [kt, setKT] = useState(initialKT);
   const [activeTab, setActiveTab] = useState<"plan" | "insights" | "structure">("plan");
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>(["Q3-QBR-Notes.pdf", "SOP_Marketo_Audit_v4.docx", "Stakeholder_Emails_Sept.eml"]);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -449,10 +434,10 @@ function Dashboard() {
           <div className="space-y-5">
             <Section icon={<Briefcase className="h-4 w-4" />} title="Client Info" subtitle="Account fundamentals">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field label="Client Name"><input className="input-base" value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} /></Field>
-                <Field label="Industry"><input className="input-base" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
-                <Field label="Region"><input className="input-base" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
-                <Field label="Services"><input className="input-base" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
+                <Field label="Client Name"><input className="input-base" placeholder="e.g. Acme Corp" value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} /></Field>
+                <Field label="Industry"><input className="input-base" placeholder="e.g. SaaS / FinTech" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
+                <Field label="Region"><input className="input-base" placeholder="e.g. North America" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
+                <Field label="Services"><input className="input-base" placeholder="e.g. ABM, Demand Gen" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
               </div>
             </Section>
 
@@ -532,17 +517,17 @@ function Dashboard() {
 
             <Section icon={<MessageSquare className="h-4 w-4" />} title="Client Preferences" subtitle="How they like to work">
               <div className="space-y-4">
-                <Field label="Communication Style"><textarea rows={2} className="input-base" value={prefs.communication} onChange={(e) => setPrefs({ ...prefs, communication: e.target.value })} /></Field>
-                <Field label="Reporting Expectations"><textarea rows={2} className="input-base" value={prefs.reporting} onChange={(e) => setPrefs({ ...prefs, reporting: e.target.value })} /></Field>
-                <Field label="Escalation Path"><textarea rows={2} className="input-base" value={prefs.escalation} onChange={(e) => setPrefs({ ...prefs, escalation: e.target.value })} /></Field>
+                <Field label="Communication Style"><textarea rows={2} className="input-base" placeholder="e.g. Weekly calls, Slack channel, email for formal updates" value={prefs.communication} onChange={(e) => setPrefs({ ...prefs, communication: e.target.value })} /></Field>
+                <Field label="Reporting Expectations"><textarea rows={2} className="input-base" placeholder="e.g. Monthly dashboard, quarterly business review" value={prefs.reporting} onChange={(e) => setPrefs({ ...prefs, reporting: e.target.value })} /></Field>
+                <Field label="Escalation Path"><textarea rows={2} className="input-base" placeholder="e.g. Account Lead → Director → VP" value={prefs.escalation} onChange={(e) => setPrefs({ ...prefs, escalation: e.target.value })} /></Field>
               </div>
             </Section>
 
             <Section icon={<BookOpen className="h-4 w-4" />} title="Knowledge Transfer Notes" subtitle="The things only the outgoing lead knows">
               <div className="space-y-4">
-                <Field label="Tribal Knowledge"><textarea rows={3} className="input-base" value={kt.tribal} onChange={(e) => setKT({ ...kt, tribal: e.target.value })} /></Field>
-                <Field label="Watch-outs"><textarea rows={3} className="input-base" value={kt.watchouts} onChange={(e) => setKT({ ...kt, watchouts: e.target.value })} /></Field>
-                <Field label="Historical Context"><textarea rows={3} className="input-base" value={kt.history} onChange={(e) => setKT({ ...kt, history: e.target.value })} /></Field>
+                <Field label="Tribal Knowledge"><textarea rows={3} className="input-base" placeholder="e.g. Unwritten rules, past decisions, or relationships that matter" value={kt.tribal} onChange={(e) => setKT({ ...kt, tribal: e.target.value })} /></Field>
+                <Field label="Watch-outs"><textarea rows={3} className="input-base" placeholder="e.g. Sensitive dates, approval delays, or things to avoid" value={kt.watchouts} onChange={(e) => setKT({ ...kt, watchouts: e.target.value })} /></Field>
+                <Field label="Historical Context"><textarea rows={3} className="input-base" placeholder="e.g. Account start date, past migrations, or team changes" value={kt.history} onChange={(e) => setKT({ ...kt, history: e.target.value })} /></Field>
               </div>
             </Section>
           </div>
