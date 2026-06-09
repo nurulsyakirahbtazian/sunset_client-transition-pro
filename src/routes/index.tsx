@@ -434,10 +434,10 @@ function Dashboard() {
           <div className="space-y-5">
             <Section icon={<Briefcase className="h-4 w-4" />} title="Client Info" subtitle="Account fundamentals">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <Field label="Client Name"><input className="input-base" value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} /></Field>
-                <Field label="Industry"><input className="input-base" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
-                <Field label="Region"><input className="input-base" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
-                <Field label="Services"><input className="input-base" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
+                <Field label="Client Name"><input className="input-base" placeholder="e.g. Acme Corp" value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} /></Field>
+                <Field label="Industry"><input className="input-base" placeholder="e.g. SaaS / FinTech" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
+                <Field label="Region"><input className="input-base" placeholder="e.g. North America" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
+                <Field label="Services"><input className="input-base" placeholder="e.g. ABM, Demand Gen" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
               </div>
             </Section>
 
