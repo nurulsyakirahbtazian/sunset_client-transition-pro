@@ -71,7 +71,8 @@ function Dashboard() {
   const [issues, setIssues] = useState<Issue[]>(initialIssues);
   const [prefs, setPrefs] = useState(initialPrefs);
   const [kt, setKT] = useState(initialKT);
-  const [activeTab, setActiveTab] = useState<"plan" | "insights" | "structure">("plan");
+  const [plan, setPlan] = useState<PlanItem[]>(initialPlan);
+
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
