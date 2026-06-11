@@ -4,9 +4,10 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import {
   Upload, FileSpreadsheet, Users, Briefcase, ListChecks, AlertTriangle,
-  MessageSquare, BookOpen, Layers, Sparkles, Clock, ShieldCheck, Download,
-  Calendar, CheckCircle2, FileText, Plus, Trash2,
+  MessageSquare, BookOpen, Layers, Download,
+  Calendar, Plus, Trash2,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,6 +58,10 @@ const initialKT = {
   history: "",
 };
 
+type PlanItem = { done: boolean; title: string; detail: string };
+const initialPlan: PlanItem[] = [];
+
+
 // ---------- Component ----------
 function Dashboard() {
   const [client, setClient] = useState(initialClient);
@@ -67,15 +72,12 @@ function Dashboard() {
   const [issues, setIssues] = useState<Issue[]>(initialIssues);
   const [prefs, setPrefs] = useState(initialPrefs);
   const [kt, setKT] = useState(initialKT);
-  const [activeTab, setActiveTab] = useState<"plan" | "insights" | "structure">("plan");
+  const [plan, setPlan] = useState<PlanItem[]>(initialPlan);
+
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const targetTabs = [
-    "Executive Summary", "Client Overview", "Stakeholders", "Recurring Tasks",
-    "Platforms", "Open Issues", "Client Preferences", "KT Checklist",
-  ];
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -132,18 +134,6 @@ function Dashboard() {
       alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
       border,
     });
-    const metricLabelStyle = {
-      font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: INK } },
-      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
-      border,
-    };
-    const metricValueStyle = {
-      font: { name: "Calibri", sz: 16, bold: true, color: { rgb: BRAND } },
-      fill: { fgColor: { rgb: "FFFFFF" } },
-      alignment: { vertical: "center", horizontal: "left", indent: 1 },
-      border,
-    };
     const priorityStyle = (p: string) => {
       const map: Record<string, string> = {
         Critical: "C81E1E", High: "E0651A", Medium: "B58900", Low: "4A6B8A",
@@ -231,30 +221,36 @@ function Dashboard() {
         [{ v: "Client", s: labelStyle }, { v: client.name, s: valueStyle() }, { v: "Industry", s: labelStyle }, { v: client.industry, s: valueStyle() }],
         [{ v: "Region", s: labelStyle }, { v: client.region, s: valueStyle(true) }, { v: "Services", s: labelStyle }, { v: client.services, s: valueStyle(true) }],
         [null, null, null, null],
-        [{ v: "EXECUTIVE METRICS", s: sectionStyle }, null, null, null],
-        [{ v: "Time Saved per Handover", s: metricLabelStyle }, { v: "6.5 Hours", s: metricValueStyle }, { v: "Account Risk Mitigation Score", s: metricLabelStyle }, { v: "98%", s: metricValueStyle }],
-        [null, null, null, null],
         [{ v: "30-DAY TRANSITION PLAN", s: sectionStyle }, null, null, null],
-        [{ v: "Week", s: headerStyle }, { v: "Phase", s: headerStyle }, { v: "Key Deliverables", s: headerStyle }, { v: "Owner", s: headerStyle }],
-        [{ v: "Week 1", s: { ...valueStyle(), font: { ...valueStyle().font, bold: true, color: { rgb: BRAND } } } }, { v: "Discovery & Access", s: valueStyle() }, { v: "Stakeholder intros, access provisioning, platform audit kickoff", s: valueStyle() }, { v: "Incoming Lead", s: valueStyle() }],
-        [{ v: "Week 2", s: { ...valueStyle(true), font: { ...valueStyle(true).font, bold: true, color: { rgb: BRAND } } } }, { v: "Shadow & Validate", s: valueStyle(true) }, { v: "Shadow recurring tasks, validate SOPs, baseline reporting setup", s: valueStyle(true) }, { v: "Joint", s: valueStyle(true) }],
-        [{ v: "Week 3", s: { ...valueStyle(), font: { ...valueStyle().font, bold: true, color: { rgb: BRAND } } } }, { v: "Co-Execute", s: valueStyle() }, { v: "Co-execute deliverables with outgoing lead, resolve top 3 open issues", s: valueStyle() }, { v: "Joint", s: valueStyle() }],
-        [{ v: "Week 4", s: { ...valueStyle(true), font: { ...valueStyle(true).font, bold: true, color: { rgb: BRAND } } } }, { v: "Ownership Transfer", s: valueStyle(true) }, { v: "Full ownership transfer, executive QBR readout, 90-day roadmap delivery", s: valueStyle(true) }, { v: "Incoming Lead", s: valueStyle(true) }],
+        [{ v: "Status", s: headerStyle }, { v: "Milestone", s: headerStyle }, { v: "Details", s: headerStyle }, { v: "", s: headerStyle }],
+        ...(plan.length === 0
+          ? ([[{ v: "No plan items added yet.", s: valueStyle() }, null, null, null]] as (CellSpec | null)[][])
+          : plan.map((p, i) => {
+              const alt = i % 2 === 1;
+              return [
+                { v: p.done ? "✓ Done" : "○ Pending", s: { ...valueStyle(alt), font: { ...valueStyle(alt).font, bold: true, color: { rgb: p.done ? "1A2233" : BRAND } } } },
+                { v: p.title || "—", s: valueStyle(alt) },
+                { v: p.detail || "—", s: valueStyle(alt) },
+                { v: "", s: valueStyle(alt) },
+              ] as (CellSpec | null)[];
+            })),
         [null, null, null, null],
         [{ v: "Generated by Handover OS  ·  handoveros.com  ·  Confidential & Proprietary", s: footerStyle }, null, null, null],
       ];
+      const planRows = Math.max(plan.length, 1);
+      const footerRowIdx = 8 + planRows + 1;
       const ws = buildSheet(rows, {
-        cols: [{ wch: 26 }, { wch: 38 }, { wch: 26 }, { wch: 38 }],
-        rowHeights: { 0: 36, 1: 22, 3: 24, 7: 24, 8: 38, 10: 24, 11: 24 },
+        cols: [{ wch: 18 }, { wch: 38 }, { wch: 58 }, { wch: 18 }],
+        rowHeights: { 0: 36, 1: 22, 3: 24, 7: 24, 8: 24 },
         merges: [
           { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
           { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
           { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
           { s: { r: 7, c: 0 }, e: { r: 7, c: 3 } },
-          { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
-          { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
+          { s: { r: footerRowIdx, c: 0 }, e: { r: footerRowIdx, c: 3 } },
         ],
       });
+
       (ws as any)["!sheetView"] = [{ showGridLines: false }];
       XLSX.utils.book_append_sheet(wb, ws, "Executive Summary");
     }
@@ -534,49 +530,71 @@ function Dashboard() {
 
           {/* RIGHT PANEL */}
           <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-            {/* Metrics */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <MetricCard icon={<Clock className="h-5 w-5" />} value="6.5 hrs" label="Time Saved per Handover" trend="↓ 82% vs manual" tone="dark" />
-              <MetricCard icon={<ShieldCheck className="h-5 w-5" />} value="98%" label="Account Risk Mitigation" trend="↑ AI-validated coverage" tone="brand" />
-            </div>
+            {/* 30-Day Transition Plan — editable form */}
 
-            {/* AI Preview */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
-              <div className="flex items-center justify-between border-b border-border bg-muted/40 px-5 py-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-ink">AI Transformation Preview</span>
+            <Section
+              icon={<Calendar className="h-4 w-4" />}
+              title="30-Day Transition Plan"
+              subtitle="Add the milestones, tasks, or deliverables for this handover"
+              action={
+                <button
+                  onClick={() => setPlan([...plan, { done: false, title: "", detail: "" }])}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-slate-ink px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-ink/90"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Item
+                </button>
+              }
+            >
+              {plan.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+                  <p className="text-[13px] text-muted-foreground">No plan items yet.</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Click "Add Item" to start building the transition plan.</p>
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">GPT-5 · Polished</span>
-              </div>
-
-              <div className="flex border-b border-border bg-card px-2">
-                {([
-                  ["plan", "Executive Summary & 30-Day Plan"],
-                  ["insights", "Polished Account Insights"],
-                  ["structure", "Excel Structure Review"],
-                ] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setActiveTab(k)}
-                    className={`relative px-4 py-3 text-[12px] font-semibold transition-colors ${
-                      activeTab === k ? "text-slate-ink" : "text-muted-foreground hover:text-slate-ink"
-                    }`}>
-                    {label}
-                    {activeTab === k && <span className="absolute inset-x-3 -bottom-px h-0.5 bg-brand" />}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-5">
-                {activeTab === "plan" && <PlanTab clientName={client.name} />}
-                {activeTab === "insights" && <InsightsTab />}
-                {activeTab === "structure" && <StructureTab tabs={targetTabs} />}
-              </div>
-            </div>
+              ) : (
+                <div className="space-y-3">
+                  {plan.map((item, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-card p-3">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={item.done}
+                          onChange={(e) => updateArr(setPlan, plan, i, { ...item, done: e.target.checked })}
+                          className="mt-2 h-4 w-4 shrink-0 cursor-pointer accent-brand"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <input
+                            className="input-base"
+                            placeholder="e.g. Week 1 — Stakeholder intro calls"
+                            value={item.title}
+                            onChange={(e) => updateArr(setPlan, plan, i, { ...item, title: e.target.value })}
+                          />
+                          <textarea
+                            rows={2}
+                            className="input-base"
+                            placeholder="Elaborate: deliverables, owners, dates, notes…"
+                            value={item.detail}
+                            onChange={(e) => updateArr(setPlan, plan, i, { ...item, detail: e.target.value })}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setPlan(plan.filter((_, k) => k !== i))}
+                          className="mt-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                          aria-label="Remove plan item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
 
             {/* Action */}
             <button
               onClick={generateExcel}
               className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-brand px-6 py-5 text-base font-semibold text-brand-foreground shadow-brand transition-all hover:translate-y-[-1px] hover:bg-brand/95 active:translate-y-0"
+
             >
               <FileSpreadsheet className="h-5 w-5" />
               <span>Generate &amp; Download Excel</span>
@@ -658,137 +676,7 @@ function AddBtn({ onClick }: { onClick: () => void }) {
   );
 }
 
-function MetricCard({ icon, value, label, trend, tone }: {
-  icon: React.ReactNode; value: string; label: string; trend: string; tone: "dark" | "brand";
-}) {
-  const dark = tone === "dark";
-  return (
-    <div className={`relative overflow-hidden rounded-xl p-5 shadow-elevated ${dark ? "bg-slate-ink text-white" : "bg-brand text-brand-foreground"}`}>
-      <div className="flex items-start justify-between">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${dark ? "bg-white/10" : "bg-white/15"}`}>{icon}</span>
-        <span className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? "text-white/60" : "text-white/80"}`}>Executive</span>
-      </div>
-      <div className="mt-5 text-[34px] font-bold leading-none tracking-tight">{value}</div>
-      <div className={`mt-1.5 text-sm font-medium ${dark ? "text-white/85" : "text-white/95"}`}>{label}</div>
-      <div className={`mt-3 text-[11px] font-medium ${dark ? "text-white/55" : "text-white/80"}`}>{trend}</div>
-      <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-white/5" />
-    </div>
-  );
-}
 
-function PlanTab({ clientName }: { clientName: string }) {
-  const weeks = [
-    { w: "Week 1", title: "Discovery & Access", items: ["Stakeholder intro calls (4 contacts)", "Provision platform access (Marketo, SFDC, 6sense, ON24)", "Baseline audit of active programs"] },
-    { w: "Week 2", title: "Shadow & Validate", items: ["Shadow weekly Marketo audit", "Validate SOPs against live workflows", "Stand up reporting baseline in Looker"] },
-    { w: "Week 3", title: "Co-Execute", items: ["Co-own deliverables with outgoing lead", "Resolve top 3 open issues (SFDC sync, GDPR, intent flow)", "Run first ON24 webinar end-to-end"] },
-    { w: "Week 4", title: "Ownership Transfer", items: ["Full handover sign-off with VP Demand Gen", "Executive QBR readout to CMO", "Deliver 90-day forward roadmap"] },
-  ];
-  return (
-    <div>
-      <div className="mb-4 rounded-lg border border-border bg-muted/40 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand">Executive Summary</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-slate-ink">
-          <strong>{clientName}</strong> transitions from outgoing lead to new account team across a 30-day structured handover.
-          The plan prioritizes zero-disruption to in-flight campaigns, full institutional knowledge transfer, and executive-grade
-          reporting continuity. Risk is mitigated through phased shadowing and co-execution before full ownership transfer.
-        </p>
-      </div>
-      <div className="relative space-y-3 pl-6">
-        <div className="absolute left-2 top-2 bottom-2 w-px bg-border" />
-        {weeks.map((w, i) => (
-          <div key={i} className="relative">
-            <div className="absolute -left-[18px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand ring-4 ring-card" />
-            <div className="rounded-lg border border-border bg-card p-3.5">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5 text-brand" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-brand">{w.w}</span>
-                <span className="text-sm font-semibold text-slate-ink">· {w.title}</span>
-              </div>
-              <ul className="mt-2 space-y-1">
-                {w.items.map((it, k) => (
-                  <li key={k} className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-ink/60" />
-                    <span>{it}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function InsightsTab() {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Raw Input</p>
-        <p className="mt-1.5 text-[13px] italic leading-relaxed text-slate-soft">
-          "margaret hates when ppl over-promise on attribution lol. last agency burned her. always show ranges, never single touch.
-          also dont schedule launches during fiscal close (last week of mar/jun/sep/dec) — legal needs 5 biz days for gated stuff"
-        </p>
-      </div>
-      <div className="flex justify-center">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white shadow-brand">
-          <Sparkles className="h-3.5 w-3.5" />
-        </div>
-      </div>
-      <div className="rounded-lg border border-brand/20 bg-gradient-to-br from-brand/5 to-transparent p-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-brand">AI-Polished · Compliance-Ready</p>
-        <div className="mt-2 space-y-2.5 text-[13px] leading-relaxed text-slate-ink">
-          <p>
-            <strong>Executive Sponsor Sensitivity:</strong> The VP of Demand Generation has experienced material dissatisfaction
-            with previous agency partners regarding marketing attribution methodology. All performance reporting must present
-            results with conservative confidence ranges. Single-touch attribution models must not be presented without
-            multi-touch contextualization.
-          </p>
-          <p>
-            <strong>Operational Scheduling Constraints:</strong> Campaign launches must not be scheduled during the client's
-            fiscal close periods, defined as the final calendar week of March, June, September, and December. Additionally,
-            all gated content assets require a minimum five (5) business day legal review prior to publication.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StructureTab({ tabs }: { tabs: string[] }) {
-  const meta = [
-    "Board-ready overview · KPIs · 30-day plan",
-    "Account fundamentals & service scope",
-    "Contact directory with roles & notes",
-    "Operational cadence & SOPs",
-    "Tech stack inventory & access",
-    "Active risks with priority & status",
-    "Communication, reporting, escalation",
-    "Sign-off checklist for handover completion",
-  ];
-  return (
-    <div>
-      <p className="mb-3 text-[13px] text-muted-foreground">
-        Your downloadable workbook contains <strong className="text-slate-ink">8 fully-structured tabs</strong>, each
-        formatted for direct use in QBRs, executive reviews, and account onboarding.
-      </p>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {tabs.map((t, i) => (
-          <div key={t} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-brand/40">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-ink text-[11px] font-bold text-white">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-slate-ink">{t}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{meta[i]}</p>
-            </div>
-            <FileText className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function updateArr<T>(setter: (v: T[]) => void, arr: T[], i: number, v: T) {
   setter(arr.map((x, k) => (k === i ? v : x)));
