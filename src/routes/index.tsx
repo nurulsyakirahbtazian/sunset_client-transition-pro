@@ -537,51 +537,70 @@ function Dashboard() {
             </Section>
           </div>
 
-          {/* RIGHT PANEL */}
-          <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-            {/* Metrics */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <MetricCard icon={<Clock className="h-5 w-5" />} value="6.5 hrs" label="Time Saved per Handover" trend="↓ 82% vs manual" tone="dark" />
-              <MetricCard icon={<ShieldCheck className="h-5 w-5" />} value="98%" label="Account Risk Mitigation" trend="↑ AI-validated coverage" tone="brand" />
-            </div>
-
-            {/* AI Preview */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_1px_3px_rgb(15_23_42/0.04)]">
-              <div className="flex items-center justify-between border-b border-border bg-muted/40 px-5 py-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-ink">AI Transformation Preview</span>
+            {/* 30-Day Transition Plan — editable form */}
+            <Section
+              icon={<Calendar className="h-4 w-4" />}
+              title="30-Day Transition Plan"
+              subtitle="Add the milestones, tasks, or deliverables for this handover"
+              action={
+                <button
+                  onClick={() => setPlan([...plan, { done: false, title: "", detail: "" }])}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-slate-ink px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-ink/90"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Item
+                </button>
+              }
+            >
+              {plan.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+                  <p className="text-[13px] text-muted-foreground">No plan items yet.</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Click "Add Item" to start building the transition plan.</p>
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">GPT-5 · Polished</span>
-              </div>
-
-              <div className="flex border-b border-border bg-card px-2">
-                {([
-                  ["plan", "Executive Summary & 30-Day Plan"],
-                  ["insights", "Polished Account Insights"],
-                  ["structure", "Excel Structure Review"],
-                ] as const).map(([k, label]) => (
-                  <button key={k} onClick={() => setActiveTab(k)}
-                    className={`relative px-4 py-3 text-[12px] font-semibold transition-colors ${
-                      activeTab === k ? "text-slate-ink" : "text-muted-foreground hover:text-slate-ink"
-                    }`}>
-                    {label}
-                    {activeTab === k && <span className="absolute inset-x-3 -bottom-px h-0.5 bg-brand" />}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-5">
-                {activeTab === "plan" && <PlanTab clientName={client.name} />}
-                {activeTab === "insights" && <InsightsTab />}
-                {activeTab === "structure" && <StructureTab tabs={targetTabs} />}
-              </div>
-            </div>
+              ) : (
+                <div className="space-y-3">
+                  {plan.map((item, i) => (
+                    <div key={i} className="rounded-lg border border-border bg-card p-3">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={item.done}
+                          onChange={(e) => updateArr(setPlan, plan, i, { ...item, done: e.target.checked })}
+                          className="mt-2 h-4 w-4 shrink-0 cursor-pointer accent-brand"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <input
+                            className="input-base"
+                            placeholder="e.g. Week 1 — Stakeholder intro calls"
+                            value={item.title}
+                            onChange={(e) => updateArr(setPlan, plan, i, { ...item, title: e.target.value })}
+                          />
+                          <textarea
+                            rows={2}
+                            className="input-base"
+                            placeholder="Elaborate: deliverables, owners, dates, notes…"
+                            value={item.detail}
+                            onChange={(e) => updateArr(setPlan, plan, i, { ...item, detail: e.target.value })}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setPlan(plan.filter((_, k) => k !== i))}
+                          className="mt-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                          aria-label="Remove plan item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
 
             {/* Action */}
             <button
               onClick={generateExcel}
               className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl bg-brand px-6 py-5 text-base font-semibold text-brand-foreground shadow-brand transition-all hover:translate-y-[-1px] hover:bg-brand/95 active:translate-y-0"
+
             >
               <FileSpreadsheet className="h-5 w-5" />
               <span>Generate &amp; Download Excel</span>
