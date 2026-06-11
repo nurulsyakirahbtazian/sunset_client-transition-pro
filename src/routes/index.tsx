@@ -537,7 +537,10 @@ function Dashboard() {
             </Section>
           </div>
 
+          {/* RIGHT PANEL */}
+          <div className="space-y-5 xl:sticky xl:top-6 xl:self-start">
             {/* 30-Day Transition Plan — editable form */}
+
             <Section
               icon={<Calendar className="h-4 w-4" />}
               title="30-Day Transition Plan"
