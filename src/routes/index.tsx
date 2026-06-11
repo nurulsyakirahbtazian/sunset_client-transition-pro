@@ -134,18 +134,6 @@ function Dashboard() {
       alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
       border,
     });
-    const metricLabelStyle = {
-      font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: INK } },
-      alignment: { vertical: "center", horizontal: "left", indent: 1, wrapText: true },
-      border,
-    };
-    const metricValueStyle = {
-      font: { name: "Calibri", sz: 16, bold: true, color: { rgb: BRAND } },
-      fill: { fgColor: { rgb: "FFFFFF" } },
-      alignment: { vertical: "center", horizontal: "left", indent: 1 },
-      border,
-    };
     const priorityStyle = (p: string) => {
       const map: Record<string, string> = {
         Critical: "C81E1E", High: "E0651A", Medium: "B58900", Low: "4A6B8A",
