@@ -4,9 +4,10 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import {
   Upload, FileSpreadsheet, Users, Briefcase, ListChecks, AlertTriangle,
-  MessageSquare, BookOpen, Layers, Sparkles, Clock, ShieldCheck, Download,
-  Calendar, CheckCircle2, FileText, Plus, Trash2,
+  MessageSquare, BookOpen, Layers, Download,
+  Calendar, Plus, Trash2,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
