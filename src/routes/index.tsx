@@ -77,10 +77,6 @@ function Dashboard() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const targetTabs = [
-    "Executive Summary", "Client Overview", "Stakeholders", "Recurring Tasks",
-    "Platforms", "Open Issues", "Client Preferences", "KT Checklist",
-  ];
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
