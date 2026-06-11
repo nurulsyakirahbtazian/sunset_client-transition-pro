@@ -57,6 +57,10 @@ const initialKT = {
   history: "",
 };
 
+type PlanItem = { done: boolean; title: string; detail: string };
+const initialPlan: PlanItem[] = [];
+
+
 // ---------- Component ----------
 function Dashboard() {
   const [client, setClient] = useState(initialClient);
