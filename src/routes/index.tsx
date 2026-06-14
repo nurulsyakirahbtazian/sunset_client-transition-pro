@@ -503,28 +503,51 @@ function Dashboard() {
               </div>
             </div>
 
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-              onClick={() => fileInputRef.current?.click()}
-              className={`group flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed px-5 py-4 transition-all lg:w-[460px] ${
-                dragOver ? "border-brand bg-brand/5" : "border-border bg-muted/40 hover:border-brand/60 hover:bg-brand/5"
-              }`}
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-ink text-white">
-                <Upload className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-ink">Upload Existing Documents</p>
-                <p className="text-xs text-muted-foreground">Drag SOPs, notes, emails — or click to browse</p>
-                {uploadedFiles.length > 0 && (
-                  <p className="mt-1 truncate text-[11px] font-medium text-brand">
-                    {uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} attached · {uploadedFiles.slice(-1)[0]}
+            <div className="flex flex-col gap-2 lg:w-[460px]">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`group flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed px-5 py-4 transition-all ${
+                  dragOver ? "border-brand bg-brand/5" : "border-border bg-muted/40 hover:border-brand/60 hover:bg-brand/5"
+                }`}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-ink text-white">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-ink">Upload Existing Documents</p>
+                  <p className="text-xs text-muted-foreground">
+                    Drop .txt/.md/.csv/.json — auto-fills the form & attaches to the Excel
                   </p>
-                )}
+                </div>
+                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
               </div>
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+
+              {autofillMsg && (
+                <p className="rounded-md bg-brand/5 px-3 py-1.5 text-[11px] font-medium text-brand">{autofillMsg}</p>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {uploadedFiles.map((f, i) => (
+                    <span key={i} className="inline-flex max-w-[220px] items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-slate-ink">
+                      <FileSpreadsheet className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate" title={f.name}>{f.name}</span>
+                      <span className="text-muted-foreground">{(f.size / 1024).toFixed(0)}kb</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                        className="ml-0.5 text-muted-foreground hover:text-brand"
+                        aria-label={`Remove ${f.name}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
