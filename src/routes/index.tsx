@@ -362,6 +362,19 @@ function Dashboard() {
       XLSX.utils.book_append_sheet(wb, ws, "Executive Summary");
     }
 
+    // 9. SOURCE DOCUMENTS (uploaded files)
+    if (uploadedFiles.length > 0) {
+      const rows: (string | { v: string; s: any })[][] = uploadedFiles.map((f) => [
+        f.name,
+        `${(f.size / 1024).toFixed(1)} KB`,
+        f.type || "—",
+        f.content ? f.content.slice(0, 2000) + (f.content.length > 2000 ? " …(truncated)" : "") : "(binary — listed for reference only)",
+      ]);
+      XLSX.utils.book_append_sheet(wb, makeTableSheet(
+        "Source Documents", ["File Name", "Size", "Type", "Content / Notes"],
+        rows, [40, 14, 20, 80]
+      ), "Source Documents");
+
     // Helper for standard styled table sheets
     const makeTableSheet = (
       title: string,
