@@ -74,15 +74,122 @@ function Dashboard() {
   const [kt, setKT] = useState(initialKT);
   const [plan, setPlan] = useState<PlanItem[]>(initialPlan);
 
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  type UploadedFile = { name: string; size: number; type: string; content: string };
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [autofillMsg, setAutofillMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const TEXT_EXT = /\.(txt|md|csv|json|log|yml|yaml|tsv)$/i;
+  const isTextFile = (f: File) => TEXT_EXT.test(f.name) || f.type.startsWith("text/") || f.type === "application/json";
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    setUploadedFiles((p) => [...p, ...Array.from(files).map((f) => f.name)]);
+  // Extract structured data from raw text via simple patterns
+  const extractFromText = (text: string) => {
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const emails = Array.from(new Set(text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/g) ?? []));
+
+    const pickAfter = (re: RegExp) => {
+      for (const l of lines) {
+        const m = l.match(re);
+        if (m && m[1]?.trim()) return m[1].trim();
+      }
+      return "";
+    };
+
+    const newClient = {
+      name: pickAfter(/^(?:client|company|account)\s*[:\-]\s*(.+)/i),
+      industry: pickAfter(/^industry\s*[:\-]\s*(.+)/i),
+      region: pickAfter(/^(?:region|location|geo)\s*[:\-]\s*(.+)/i),
+      services: pickAfter(/^(?:services?|scope|offerings?)\s*[:\-]\s*(.+)/i),
+    };
+
+    const knownPlatforms = ["Marketo", "Salesforce", "6sense", "ON24", "HubSpot", "LinkedIn Campaign Manager"];
+    const detectedPlatforms = knownPlatforms.filter((p) => new RegExp(`\\b${p.replace(/\+/g, "\\+")}\\b`, "i").test(text));
+
+    const newStakeholders: Stakeholder[] = emails.slice(0, 10).map((email) => {
+      const local = email.split("@")[0].replace(/[._-]+/g, " ");
+      const name = local.replace(/\b\w/g, (c) => c.toUpperCase());
+      // try to find a line mentioning this email for context
+      const ctx = lines.find((l) => l.includes(email)) ?? "";
+      const role = (ctx.match(/\b(CEO|CTO|CMO|COO|VP|Director|Manager|Lead|Head|Owner|Analyst|Coordinator)\b[^,;|]*/i)?.[0] ?? "").trim();
+      return { name, role, email, notes: "" };
+    });
+
+    const issueLines = lines.filter((l) => /^(issue|bug|risk|blocker|problem)\s*[:\-]/i.test(l));
+    const newIssues: Issue[] = issueLines.slice(0, 10).map((l) => ({
+      issue: l.replace(/^(issue|bug|risk|blocker|problem)\s*[:\-]\s*/i, ""),
+      priority: /critical|urgent|high/i.test(l) ? "High" : /low/i.test(l) ? "Low" : "Medium",
+      status: /resolved|done|closed/i.test(l) ? "Resolved" : "Open",
+    }));
+
+    return { newClient, detectedPlatforms, newStakeholders, newIssues };
   };
+
+  const applyExtracted = (text: string) => {
+    const { newClient, detectedPlatforms, newStakeholders, newIssues } = extractFromText(text);
+    const filled: string[] = [];
+
+    setClient((c) => {
+      const out = { ...c };
+      (Object.keys(newClient) as (keyof typeof newClient)[]).forEach((k) => {
+        if (newClient[k] && !out[k]) { out[k] = newClient[k]; filled.push(`client.${k}`); }
+      });
+      return out;
+    });
+    if (detectedPlatforms.length) {
+      setPlatforms((p) => {
+        const out = { ...p };
+        detectedPlatforms.forEach((name) => { out[name] = true; filled.push(`platform:${name}`); });
+        return out;
+      });
+    }
+    if (newStakeholders.length) {
+      setStakeholders((s) => {
+        const existing = new Set(s.map((x) => x.email.toLowerCase()));
+        const fresh = newStakeholders.filter((x) => !existing.has(x.email.toLowerCase()));
+        fresh.forEach(() => filled.push("stakeholder"));
+        return [...s, ...fresh];
+      });
+    }
+    if (newIssues.length) {
+      setIssues((i) => { newIssues.forEach(() => filled.push("issue")); return [...i, ...newIssues]; });
+    }
+    return filled.length;
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const arr = Array.from(files);
+    const parsed: UploadedFile[] = [];
+    let totalFilled = 0;
+
+    for (const f of arr) {
+      if (f.size > 2 * 1024 * 1024) {
+        parsed.push({ name: f.name, size: f.size, type: f.type, content: "" });
+        continue;
+      }
+      if (isTextFile(f)) {
+        const content = await f.text();
+        parsed.push({ name: f.name, size: f.size, type: f.type || "text/plain", content });
+        totalFilled += applyExtracted(content);
+      } else {
+        parsed.push({ name: f.name, size: f.size, type: f.type, content: "" });
+      }
+    }
+
+    setUploadedFiles((p) => [...p, ...parsed]);
+    const textCount = parsed.filter((p) => p.content).length;
+    setAutofillMsg(
+      totalFilled > 0
+        ? `Parsed ${textCount} doc${textCount > 1 ? "s" : ""} · auto-filled ${totalFilled} field${totalFilled > 1 ? "s" : ""}. Files will be attached to the Excel export.`
+        : textCount > 0
+          ? `Parsed ${textCount} text doc${textCount > 1 ? "s" : ""} — no patterns matched, but content will be attached to the Excel export.`
+          : `${parsed.length} file${parsed.length > 1 ? "s" : ""} attached. Binary files are listed in the export but cannot be parsed in-browser.`
+    );
+    setTimeout(() => setAutofillMsg(null), 6000);
+  };
+
+  const removeFile = (idx: number) => setUploadedFiles((p) => p.filter((_, i) => i !== idx));
 
   const generateExcel = () => {
     // ----- Styling helpers -----
