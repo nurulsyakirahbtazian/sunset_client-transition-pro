@@ -374,6 +374,8 @@ function Dashboard() {
         "Source Documents", ["File Name", "Size", "Type", "Content / Notes"],
         rows, [40, 14, 20, 80]
       ), "Source Documents");
+    }
+
 
     // Helper for standard styled table sheets
     const makeTableSheet = (
