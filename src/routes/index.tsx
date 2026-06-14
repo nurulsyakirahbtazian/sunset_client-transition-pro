@@ -74,15 +74,122 @@ function Dashboard() {
   const [kt, setKT] = useState(initialKT);
   const [plan, setPlan] = useState<PlanItem[]>(initialPlan);
 
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  type UploadedFile = { name: string; size: number; type: string; content: string };
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [autofillMsg, setAutofillMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const TEXT_EXT = /\.(txt|md|csv|json|log|yml|yaml|tsv)$/i;
+  const isTextFile = (f: File) => TEXT_EXT.test(f.name) || f.type.startsWith("text/") || f.type === "application/json";
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    setUploadedFiles((p) => [...p, ...Array.from(files).map((f) => f.name)]);
+  // Extract structured data from raw text via simple patterns
+  const extractFromText = (text: string) => {
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const emails = Array.from(new Set(text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/g) ?? []));
+
+    const pickAfter = (re: RegExp) => {
+      for (const l of lines) {
+        const m = l.match(re);
+        if (m && m[1]?.trim()) return m[1].trim();
+      }
+      return "";
+    };
+
+    const newClient = {
+      name: pickAfter(/^(?:client|company|account)\s*[:\-]\s*(.+)/i),
+      industry: pickAfter(/^industry\s*[:\-]\s*(.+)/i),
+      region: pickAfter(/^(?:region|location|geo)\s*[:\-]\s*(.+)/i),
+      services: pickAfter(/^(?:services?|scope|offerings?)\s*[:\-]\s*(.+)/i),
+    };
+
+    const knownPlatforms = ["Marketo", "Salesforce", "6sense", "ON24", "HubSpot", "LinkedIn Campaign Manager"];
+    const detectedPlatforms = knownPlatforms.filter((p) => new RegExp(`\\b${p.replace(/\+/g, "\\+")}\\b`, "i").test(text));
+
+    const newStakeholders: Stakeholder[] = emails.slice(0, 10).map((email) => {
+      const local = email.split("@")[0].replace(/[._-]+/g, " ");
+      const name = local.replace(/\b\w/g, (c) => c.toUpperCase());
+      // try to find a line mentioning this email for context
+      const ctx = lines.find((l) => l.includes(email)) ?? "";
+      const role = (ctx.match(/\b(CEO|CTO|CMO|COO|VP|Director|Manager|Lead|Head|Owner|Analyst|Coordinator)\b[^,;|]*/i)?.[0] ?? "").trim();
+      return { name, role, email, notes: "" };
+    });
+
+    const issueLines = lines.filter((l) => /^(issue|bug|risk|blocker|problem)\s*[:\-]/i.test(l));
+    const newIssues: Issue[] = issueLines.slice(0, 10).map((l) => ({
+      issue: l.replace(/^(issue|bug|risk|blocker|problem)\s*[:\-]\s*/i, ""),
+      priority: /critical|urgent|high/i.test(l) ? "High" : /low/i.test(l) ? "Low" : "Medium",
+      status: /resolved|done|closed/i.test(l) ? "Resolved" : "Open",
+    }));
+
+    return { newClient, detectedPlatforms, newStakeholders, newIssues };
   };
+
+  const applyExtracted = (text: string) => {
+    const { newClient, detectedPlatforms, newStakeholders, newIssues } = extractFromText(text);
+    const filled: string[] = [];
+
+    setClient((c) => {
+      const out = { ...c };
+      (Object.keys(newClient) as (keyof typeof newClient)[]).forEach((k) => {
+        if (newClient[k] && !out[k]) { out[k] = newClient[k]; filled.push(`client.${k}`); }
+      });
+      return out;
+    });
+    if (detectedPlatforms.length) {
+      setPlatforms((p) => {
+        const out = { ...p };
+        detectedPlatforms.forEach((name) => { out[name] = true; filled.push(`platform:${name}`); });
+        return out;
+      });
+    }
+    if (newStakeholders.length) {
+      setStakeholders((s) => {
+        const existing = new Set(s.map((x) => x.email.toLowerCase()));
+        const fresh = newStakeholders.filter((x) => !existing.has(x.email.toLowerCase()));
+        fresh.forEach(() => filled.push("stakeholder"));
+        return [...s, ...fresh];
+      });
+    }
+    if (newIssues.length) {
+      setIssues((i) => { newIssues.forEach(() => filled.push("issue")); return [...i, ...newIssues]; });
+    }
+    return filled.length;
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const arr = Array.from(files);
+    const parsed: UploadedFile[] = [];
+    let totalFilled = 0;
+
+    for (const f of arr) {
+      if (f.size > 2 * 1024 * 1024) {
+        parsed.push({ name: f.name, size: f.size, type: f.type, content: "" });
+        continue;
+      }
+      if (isTextFile(f)) {
+        const content = await f.text();
+        parsed.push({ name: f.name, size: f.size, type: f.type || "text/plain", content });
+        totalFilled += applyExtracted(content);
+      } else {
+        parsed.push({ name: f.name, size: f.size, type: f.type, content: "" });
+      }
+    }
+
+    setUploadedFiles((p) => [...p, ...parsed]);
+    const textCount = parsed.filter((p) => p.content).length;
+    setAutofillMsg(
+      totalFilled > 0
+        ? `Parsed ${textCount} doc${textCount > 1 ? "s" : ""} · auto-filled ${totalFilled} field${totalFilled > 1 ? "s" : ""}. Files will be attached to the Excel export.`
+        : textCount > 0
+          ? `Parsed ${textCount} text doc${textCount > 1 ? "s" : ""} — no patterns matched, but content will be attached to the Excel export.`
+          : `${parsed.length} file${parsed.length > 1 ? "s" : ""} attached. Binary files are listed in the export but cannot be parsed in-browser.`
+    );
+    setTimeout(() => setAutofillMsg(null), 6000);
+  };
+
+  const removeFile = (idx: number) => setUploadedFiles((p) => p.filter((_, i) => i !== idx));
 
   const generateExcel = () => {
     // ----- Styling helpers -----
@@ -255,6 +362,8 @@ function Dashboard() {
       XLSX.utils.book_append_sheet(wb, ws, "Executive Summary");
     }
 
+
+
     // Helper for standard styled table sheets
     const makeTableSheet = (
       title: string,
@@ -367,6 +476,21 @@ function Dashboard() {
       ), "KT Checklist");
     }
 
+    // 9. SOURCE DOCUMENTS (uploaded files — content + metadata)
+    if (uploadedFiles.length > 0) {
+      const rows: (string | { v: string; s: any })[][] = uploadedFiles.map((f) => [
+        f.name,
+        `${(f.size / 1024).toFixed(1)} KB`,
+        f.type || "—",
+        f.content ? f.content.slice(0, 2000) + (f.content.length > 2000 ? " …(truncated)" : "") : "(binary — listed for reference only)",
+      ]);
+      XLSX.utils.book_append_sheet(wb, makeTableSheet(
+        "Source Documents", ["File Name", "Size", "Type", "Content / Notes"],
+        rows, [40, 14, 20, 80]
+      ), "Source Documents");
+    }
+
+
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
     saveAs(new Blob([buf], { type: "application/octet-stream" }),
       `Handover_${client.name.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -396,28 +520,51 @@ function Dashboard() {
               </div>
             </div>
 
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-              onClick={() => fileInputRef.current?.click()}
-              className={`group flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed px-5 py-4 transition-all lg:w-[460px] ${
-                dragOver ? "border-brand bg-brand/5" : "border-border bg-muted/40 hover:border-brand/60 hover:bg-brand/5"
-              }`}
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-ink text-white">
-                <Upload className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-ink">Upload Existing Documents</p>
-                <p className="text-xs text-muted-foreground">Drag SOPs, notes, emails — or click to browse</p>
-                {uploadedFiles.length > 0 && (
-                  <p className="mt-1 truncate text-[11px] font-medium text-brand">
-                    {uploadedFiles.length} file{uploadedFiles.length > 1 ? "s" : ""} attached · {uploadedFiles.slice(-1)[0]}
+            <div className="flex flex-col gap-2 lg:w-[460px]">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`group flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed px-5 py-4 transition-all ${
+                  dragOver ? "border-brand bg-brand/5" : "border-border bg-muted/40 hover:border-brand/60 hover:bg-brand/5"
+                }`}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-ink text-white">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-ink">Upload Existing Documents</p>
+                  <p className="text-xs text-muted-foreground">
+                    Drop .txt/.md/.csv/.json — auto-fills the form & attaches to the Excel
                   </p>
-                )}
+                </div>
+                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
               </div>
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+
+              {autofillMsg && (
+                <p className="rounded-md bg-brand/5 px-3 py-1.5 text-[11px] font-medium text-brand">{autofillMsg}</p>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {uploadedFiles.map((f, i) => (
+                    <span key={i} className="inline-flex max-w-[220px] items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-slate-ink">
+                      <FileSpreadsheet className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate" title={f.name}>{f.name}</span>
+                      <span className="text-muted-foreground">{(f.size / 1024).toFixed(0)}kb</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                        className="ml-0.5 text-muted-foreground hover:text-brand"
+                        aria-label={`Remove ${f.name}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
