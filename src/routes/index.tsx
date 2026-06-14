@@ -476,6 +476,21 @@ function Dashboard() {
       ), "KT Checklist");
     }
 
+    // 9. SOURCE DOCUMENTS (uploaded files — content + metadata)
+    if (uploadedFiles.length > 0) {
+      const rows: (string | { v: string; s: any })[][] = uploadedFiles.map((f) => [
+        f.name,
+        `${(f.size / 1024).toFixed(1)} KB`,
+        f.type || "—",
+        f.content ? f.content.slice(0, 2000) + (f.content.length > 2000 ? " …(truncated)" : "") : "(binary — listed for reference only)",
+      ]);
+      XLSX.utils.book_append_sheet(wb, makeTableSheet(
+        "Source Documents", ["File Name", "Size", "Type", "Content / Notes"],
+        rows, [40, 14, 20, 80]
+      ), "Source Documents");
+    }
+
+
     const buf = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
     saveAs(new Blob([buf], { type: "application/octet-stream" }),
       `Handover_${client.name.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
