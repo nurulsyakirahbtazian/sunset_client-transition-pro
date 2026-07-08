@@ -644,22 +644,39 @@ function Dashboard() {
             </Section>
 
             <Section icon={<AlertTriangle className="h-4 w-4" />} title="Open Issues" subtitle="Active risks & blockers"
-              action={<AddBtn onClick={() => setIssues([...issues, { issue: "", priority: "Medium", status: "Open" }])} />}>
-              <div className="space-y-2">
+              action={<AddBtn onClick={() => setIssues([...issues, { issue: "", priority: "Medium", status: "Open", details: "" }])} />}>
+              <div className="space-y-3">
                 {issues.map((it, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-2">
-                    <input className="input-base col-span-7" placeholder="Issue" value={it.issue} onChange={(e) => updateArr(setIssues, issues, i, { ...it, issue: e.target.value })} />
-                    <select className="input-base col-span-2" value={it.priority} onChange={(e) => updateArr(setIssues, issues, i, { ...it, priority: e.target.value })}>
-                      <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-                    </select>
-                    <select className="input-base col-span-2" value={it.status} onChange={(e) => updateArr(setIssues, issues, i, { ...it, status: e.target.value })}>
-                      <option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option>
-                    </select>
-                    <button onClick={() => setIssues(issues.filter((_, x) => x !== i))}
-                      className="col-span-1 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-brand hover:text-brand">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <RowCard key={i} onRemove={() => setIssues(issues.filter((_, x) => x !== i))}>
+                    <div className="grid grid-cols-12 gap-2">
+                      <input className="input-base col-span-8" placeholder="Issue" value={it.issue} onChange={(e) => updateArr(setIssues, issues, i, { ...it, issue: e.target.value })} />
+                      <select className="input-base col-span-2" value={it.priority} onChange={(e) => updateArr(setIssues, issues, i, { ...it, priority: e.target.value })}>
+                        <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+                      </select>
+                      <select className="input-base col-span-2" value={it.status} onChange={(e) => updateArr(setIssues, issues, i, { ...it, status: e.target.value })}>
+                        <option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option>
+                      </select>
+                      <textarea rows={2} className="input-base col-span-12" placeholder="Details — context, impact, next steps" value={it.details} onChange={(e) => updateArr(setIssues, issues, i, { ...it, details: e.target.value })} />
+                    </div>
+                  </RowCard>
+                ))}
+              </div>
+            </Section>
+
+            <Section icon={<FileSpreadsheet className="h-4 w-4" />} title="Login Compilation" subtitle="Credentials & access details"
+              action={<AddBtn onClick={() => setLogins([...logins, { platform: "", link: "", owner: "", username: "", password: "", notes: "" }])} />}>
+              <div className="space-y-3">
+                {logins.map((l, i) => (
+                  <RowCard key={i} onRemove={() => setLogins(logins.filter((_, x) => x !== i))}>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input className="input-base" placeholder="Platform" value={l.platform} onChange={(e) => updateArr(setLogins, logins, i, { ...l, platform: e.target.value })} />
+                      <input className="input-base" placeholder="Link / URL" value={l.link} onChange={(e) => updateArr(setLogins, logins, i, { ...l, link: e.target.value })} />
+                      <input className="input-base" placeholder="Owner" value={l.owner} onChange={(e) => updateArr(setLogins, logins, i, { ...l, owner: e.target.value })} />
+                      <input className="input-base" placeholder="Username" value={l.username} onChange={(e) => updateArr(setLogins, logins, i, { ...l, username: e.target.value })} />
+                      <input className="input-base" placeholder="Password" value={l.password} onChange={(e) => updateArr(setLogins, logins, i, { ...l, password: e.target.value })} />
+                      <input className="input-base" placeholder="Notes" value={l.notes} onChange={(e) => updateArr(setLogins, logins, i, { ...l, notes: e.target.value })} />
+                    </div>
+                  </RowCard>
                 ))}
               </div>
             </Section>
