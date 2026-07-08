@@ -741,10 +741,25 @@ function Dashboard() {
                           <textarea
                             rows={2}
                             className="input-base"
-                            placeholder="Elaborate: deliverables, owners, dates, notes…"
+                            placeholder="Elaborate: deliverables, dates, notes…"
                             value={item.detail}
                             onChange={(e) => updateArr(setPlan, plan, i, { ...item, detail: e.target.value })}
                           />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              className="input-base"
+                              placeholder="Owner"
+                              value={item.owner}
+                              onChange={(e) => updateArr(setPlan, plan, i, { ...item, owner: e.target.value })}
+                            />
+                            <select
+                              className="input-base"
+                              value={item.status}
+                              onChange={(e) => updateArr(setPlan, plan, i, { ...item, status: e.target.value })}
+                            >
+                              <option>Pending</option><option>In Progress</option><option>Done</option><option>Blocked</option>
+                            </select>
+                          </div>
                         </div>
                         <button
                           onClick={() => setPlan(plan.filter((_, k) => k !== i))}
