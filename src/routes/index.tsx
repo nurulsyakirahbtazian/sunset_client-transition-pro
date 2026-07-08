@@ -605,13 +605,15 @@ function Dashboard() {
             </Section>
 
             <Section icon={<ListChecks className="h-4 w-4" />} title="Recurring Tasks" subtitle="Operational cadence"
-              action={<AddBtn onClick={() => setTasks([...tasks, { task: "", frequency: "", instructions: "" }])} />}>
+              action={<AddBtn onClick={() => setTasks([...tasks, { task: "", frequency: "", currentOwner: "", newOwner: "", instructions: "" }])} />}>
               <div className="space-y-3">
                 {tasks.map((t, i) => (
                   <RowCard key={i} onRemove={() => setTasks(tasks.filter((_, x) => x !== i))}>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <input className="input-base" placeholder="Task Name" value={t.task} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, task: e.target.value })} />
                       <input className="input-base" placeholder="Frequency" value={t.frequency} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, frequency: e.target.value })} />
+                      <input className="input-base" placeholder="Current Owner" value={t.currentOwner} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, currentOwner: e.target.value })} />
+                      <input className="input-base" placeholder="New Owner" value={t.newOwner} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, newOwner: e.target.value })} />
                       <textarea className="input-base md:col-span-2" rows={2} placeholder="Instructions" value={t.instructions} onChange={(e) => updateArr(setTasks, tasks, i, { ...t, instructions: e.target.value })} />
                     </div>
                   </RowCard>
