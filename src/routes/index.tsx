@@ -123,6 +123,7 @@ function Dashboard() {
       issue: l.replace(/^(issue|bug|risk|blocker|problem)\s*[:\-]\s*/i, ""),
       priority: /critical|urgent|high/i.test(l) ? "High" : /low/i.test(l) ? "Low" : "Medium",
       status: /resolved|done|closed/i.test(l) ? "Resolved" : "Open",
+      details: "",
     }));
 
     return { newClient, detectedPlatforms, newStakeholders, newIssues };
