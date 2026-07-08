@@ -708,7 +708,7 @@ function Dashboard() {
               subtitle="Add the milestones, tasks, or deliverables for this handover"
               action={
                 <button
-                  onClick={() => setPlan([...plan, { done: false, title: "", detail: "" }])}
+                  onClick={() => setPlan([...plan, { done: false, title: "", detail: "", owner: "", status: "Pending" }])}
                   className="inline-flex items-center gap-1.5 rounded-md bg-slate-ink px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-ink/90"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add Item
