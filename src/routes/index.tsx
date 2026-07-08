@@ -21,8 +21,9 @@ export const Route = createFileRoute("/")({
 
 // ---------- Mock data ----------
 type Stakeholder = { name: string; role: string; email: string; notes: string };
-type RecurringTask = { task: string; frequency: string; instructions: string };
-type Issue = { issue: string; priority: string; status: string };
+type RecurringTask = { task: string; frequency: string; currentOwner: string; newOwner: string; instructions: string };
+type Issue = { issue: string; priority: string; status: string; details: string };
+type Login = { platform: string; link: string; owner: string; username: string; password: string; notes: string };
 
 const initialClient = {
   name: "",
@@ -45,6 +46,7 @@ const initialPlatforms: Record<string, boolean> = {
 };
 
 const initialIssues: Issue[] = [];
+const initialLogins: Login[] = [];
 
 const initialPrefs = {
   communication: "",
@@ -58,7 +60,7 @@ const initialKT = {
   history: "",
 };
 
-type PlanItem = { done: boolean; title: string; detail: string };
+type PlanItem = { done: boolean; title: string; detail: string; owner: string; status: string };
 const initialPlan: PlanItem[] = [];
 
 
