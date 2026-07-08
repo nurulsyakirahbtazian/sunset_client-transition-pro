@@ -72,6 +72,7 @@ function Dashboard() {
   const [platforms, setPlatforms] = useState(initialPlatforms);
   const [customPlatform, setCustomPlatform] = useState("");
   const [issues, setIssues] = useState<Issue[]>(initialIssues);
+  const [logins, setLogins] = useState<Login[]>(initialLogins);
   const [prefs, setPrefs] = useState(initialPrefs);
   const [kt, setKT] = useState(initialKT);
   const [plan, setPlan] = useState<PlanItem[]>(initialPlan);
