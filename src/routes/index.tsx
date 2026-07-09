@@ -410,29 +410,26 @@ function Dashboard() {
       [30, 20, 22, 22, 60]
     ), "Recurring Tasks");
 
-    // 5. PLATFORMS — only ticked platforms
+    // 5. PLATFORMS — only ticked platforms (no status column)
     {
       const activePlatforms = Object.entries(platforms).filter(([, on]) => on);
       if (activePlatforms.length > 0) {
         XLSX.utils.book_append_sheet(wb, makeTableSheet(
-          "Platforms", ["Platform", "Status"],
-          activePlatforms.map(([p]) => [
-            p,
-            {
-              v: "✓  Active",
-              s: {
-                font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "1F6B3B" } },
-                fill: { fgColor: { rgb: "D9F2E1" } },
-                alignment: { vertical: "center", horizontal: "left", indent: 1 },
-                border,
-              },
-            },
-          ]), [36, 24]
+          "Platforms", ["Platform"],
+          activePlatforms.map(([p]) => [p]),
+          [50]
         ), "Platforms");
       }
     }
 
-    // 6. OPEN ISSUES (with colored priority/status pills)
+    // 6. LOGIN COMPILATION (next to Platforms)
+    XLSX.utils.book_append_sheet(wb, makeTableSheet(
+      "Login Compilation", ["Platform", "Link", "Owner", "Username", "Password", "Notes"],
+      logins.map((l) => [l.platform, l.link, l.owner, l.username, l.password, l.notes]),
+      [24, 40, 22, 26, 22, 40]
+    ), "Login Compilation");
+
+    // 7. OPEN ISSUES (with colored priority/status pills)
     XLSX.utils.book_append_sheet(wb, makeTableSheet(
       "Open Issues", ["Issue", "Priority", "Status", "Details"],
       issues.map((it) => [
@@ -442,13 +439,6 @@ function Dashboard() {
         it.details,
       ]), [50, 14, 16, 60]
     ), "Open Issues");
-
-    // 7. LOGIN COMPILATION
-    XLSX.utils.book_append_sheet(wb, makeTableSheet(
-      "Login Compilation", ["Platform", "Link", "Owner", "Username", "Password", "Notes"],
-      logins.map((l) => [l.platform, l.link, l.owner, l.username, l.password, l.notes]),
-      [24, 40, 22, 26, 22, 40]
-    ), "Login Compilation");
 
     // 8. CLIENT PREFERENCES
     XLSX.utils.book_append_sheet(wb, makeTableSheet(
