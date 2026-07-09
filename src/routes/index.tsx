@@ -42,7 +42,7 @@ const initialPlatforms: Record<string, boolean> = {
   "6sense": false,
   ON24: false,
   "HubSpot": false,
-  "LinkedIn Campaign Manager": false,
+  "Salesloft": false,
 };
 
 const initialIssues: Issue[] = [];
