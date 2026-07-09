@@ -526,7 +526,7 @@ function Dashboard() {
                   B2B Client Handover & Account Transition
                 </h1>
                 <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Capture institutional knowledge, polish it with AI, and ship a board-ready Excel handover in minutes — not weeks.
+                  Capture institutional knowledge and ship a board-ready Excel handover in minutes — not weeks.
                 </p>
               </div>
             </div>
