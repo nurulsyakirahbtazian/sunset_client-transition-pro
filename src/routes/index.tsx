@@ -584,6 +584,7 @@ function Dashboard() {
                 <Field label="Industry"><input className="input-base" placeholder="e.g. SaaS / FinTech" value={client.industry} onChange={(e) => setClient({ ...client, industry: e.target.value })} /></Field>
                 <Field label="Region"><input className="input-base" placeholder="e.g. North America" value={client.region} onChange={(e) => setClient({ ...client, region: e.target.value })} /></Field>
                 <Field label="Services"><input className="input-base" placeholder="e.g. ABM, Demand Gen" value={client.services} onChange={(e) => setClient({ ...client, services: e.target.value })} /></Field>
+                <Field label="Prepared By"><input className="input-base" placeholder="e.g. Jane Doe, Outgoing Account Lead" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} /></Field>
               </div>
             </Section>
 
