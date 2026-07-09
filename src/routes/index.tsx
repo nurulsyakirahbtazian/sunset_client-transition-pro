@@ -643,6 +643,24 @@ function Dashboard() {
               </div>
             </Section>
 
+            <Section icon={<FileSpreadsheet className="h-4 w-4" />} title="Login Compilation" subtitle="Credentials & access details"
+              action={<AddBtn onClick={() => setLogins([...logins, { platform: "", link: "", owner: "", username: "", password: "", notes: "" }])} />}>
+              <div className="space-y-3">
+                {logins.map((l, i) => (
+                  <RowCard key={i} onRemove={() => setLogins(logins.filter((_, x) => x !== i))}>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input className="input-base" placeholder="Platform" value={l.platform} onChange={(e) => updateArr(setLogins, logins, i, { ...l, platform: e.target.value })} />
+                      <input className="input-base" placeholder="Link / URL" value={l.link} onChange={(e) => updateArr(setLogins, logins, i, { ...l, link: e.target.value })} />
+                      <input className="input-base" placeholder="Owner" value={l.owner} onChange={(e) => updateArr(setLogins, logins, i, { ...l, owner: e.target.value })} />
+                      <input className="input-base" placeholder="Username" value={l.username} onChange={(e) => updateArr(setLogins, logins, i, { ...l, username: e.target.value })} />
+                      <input className="input-base" placeholder="Password" value={l.password} onChange={(e) => updateArr(setLogins, logins, i, { ...l, password: e.target.value })} />
+                      <input className="input-base" placeholder="Notes" value={l.notes} onChange={(e) => updateArr(setLogins, logins, i, { ...l, notes: e.target.value })} />
+                    </div>
+                  </RowCard>
+                ))}
+              </div>
+            </Section>
+
             <Section icon={<AlertTriangle className="h-4 w-4" />} title="Open Issues" subtitle="Active risks & blockers"
               action={<AddBtn onClick={() => setIssues([...issues, { issue: "", priority: "Medium", status: "Open", details: "" }])} />}>
               <div className="space-y-3">
@@ -663,23 +681,6 @@ function Dashboard() {
               </div>
             </Section>
 
-            <Section icon={<FileSpreadsheet className="h-4 w-4" />} title="Login Compilation" subtitle="Credentials & access details"
-              action={<AddBtn onClick={() => setLogins([...logins, { platform: "", link: "", owner: "", username: "", password: "", notes: "" }])} />}>
-              <div className="space-y-3">
-                {logins.map((l, i) => (
-                  <RowCard key={i} onRemove={() => setLogins(logins.filter((_, x) => x !== i))}>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <input className="input-base" placeholder="Platform" value={l.platform} onChange={(e) => updateArr(setLogins, logins, i, { ...l, platform: e.target.value })} />
-                      <input className="input-base" placeholder="Link / URL" value={l.link} onChange={(e) => updateArr(setLogins, logins, i, { ...l, link: e.target.value })} />
-                      <input className="input-base" placeholder="Owner" value={l.owner} onChange={(e) => updateArr(setLogins, logins, i, { ...l, owner: e.target.value })} />
-                      <input className="input-base" placeholder="Username" value={l.username} onChange={(e) => updateArr(setLogins, logins, i, { ...l, username: e.target.value })} />
-                      <input className="input-base" placeholder="Password" value={l.password} onChange={(e) => updateArr(setLogins, logins, i, { ...l, password: e.target.value })} />
-                      <input className="input-base" placeholder="Notes" value={l.notes} onChange={(e) => updateArr(setLogins, logins, i, { ...l, notes: e.target.value })} />
-                    </div>
-                  </RowCard>
-                ))}
-              </div>
-            </Section>
 
             <Section icon={<MessageSquare className="h-4 w-4" />} title="Client Preferences" subtitle="How they like to work">
               <div className="space-y-4">
