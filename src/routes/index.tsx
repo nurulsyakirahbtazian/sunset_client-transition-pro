@@ -67,6 +67,7 @@ const initialPlan: PlanItem[] = [];
 // ---------- Component ----------
 function Dashboard() {
   const [client, setClient] = useState(initialClient);
+  const [preparedBy, setPreparedBy] = useState("");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>(initialStakeholders);
   const [tasks, setTasks] = useState<RecurringTask[]>(initialTasks);
   const [platforms, setPlatforms] = useState(initialPlatforms);
