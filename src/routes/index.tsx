@@ -106,7 +106,7 @@ function Dashboard() {
       services: pickAfter(/^(?:services?|scope|offerings?)\s*[:\-]\s*(.+)/i),
     };
 
-    const knownPlatforms = ["Marketo", "Salesforce", "6sense", "ON24", "HubSpot", "LinkedIn Campaign Manager"];
+    const knownPlatforms = ["Marketo", "Salesforce", "6sense", "ON24", "HubSpot", "Salesloft"];
     const detectedPlatforms = knownPlatforms.filter((p) => new RegExp(`\\b${p.replace(/\+/g, "\\+")}\\b`, "i").test(text));
 
     const newStakeholders: Stakeholder[] = emails.slice(0, 10).map((email) => {
