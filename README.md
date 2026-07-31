@@ -2,6 +2,8 @@
 
 A premium, single-page B2B tool for capturing everything that lives in an account manager's head — and exporting it as a fully formatted, executive-grade Excel workbook.
 
+Link: https://client-transition-pro.lovable.app
+
 ---
 
 ## The Problem
