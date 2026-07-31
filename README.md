@@ -1,164 +1,129 @@
-# Handover OS — B2B Client Handover & Account Transition Dashboard
+# Client Handover & Account Transition Dashboard
 
-> A premium, single-page executive dashboard that turns chaotic client handovers into a structured, auditable, and instantly shareable transition package — exportable as a fully styled, multi-tab Excel workbook.
-
-Live preview: https://id-preview--80faa4ac-1459-4200-b5a2-eb708a82acd5.lovable.app  
-Production: https://client-transition-pro.lovable.app
+A premium, single-page B2B tool for capturing everything that lives in an account manager's head — and exporting it as a fully formatted, executive-grade Excel workbook.
 
 ---
 
-## 1. The Problem
+## The Problem
 
-In B2B service organizations (agencies, consultancies, managed-service providers, customer success teams), **client handovers are the single biggest source of churn, dropped balls, and internal friction**.
+When a client account changes hands, the knowledge rarely does. Handovers are scattered across Slack threads, inboxes, half-finished SOP docs, and the outgoing manager's memory. The result:
 
-When an account manager leaves, gets promoted, or rotates off an account, knowledge typically lives in:
+- Recurring deliverables get missed in the first 30 days
+- Nobody knows who owns which platform login
+- Open issues resurface with no context or history
+- The client feels the churn — and account risk spikes
 
-- Scattered Slack DMs and email threads
-- Personal Notion/Google Doc pages nobody else can find
-- "Tribal knowledge" only the outgoing AM remembers
-- Half-finished SOPs in five different folders
-- Mental models of stakeholder politics that are never written down
+## The Solution
 
-The result:
-- **Clients feel the drop** — repeated questions, missed context, broken trust
-- **New AMs ramp slowly** — often 30–60 days of low productivity
-- **Issues fall through the cracks** — open tickets, renewal dates, billing quirks
-- **Leadership has zero visibility** — no standard artifact to review or audit
-- **Compliance risk** — no documented trail of credentials, access, or commitments
+One structured workspace where the outgoing owner records the full account picture, and one click turns it into a polished, boardroom-ready `.xlsx` handover pack the incoming owner can actually use.
 
-Most teams "solve" this with a blank Google Doc template. It doesn't work.
+- **Upload existing docs** — SOPs, notes, emails, CSVs are parsed in the browser to auto-fill the form
+- **Structured capture** — client info, stakeholders, recurring tasks, platforms, logins, issues, preferences, knowledge transfer
+- **Editable 30-day transition plan** — checkbox milestones with owner, status and elaboration
+- **Styled Excel export** — branded title bands, dark headers, zebra rows, colour-coded priority/status pills, frozen panes, auto-filters
 
-## 2. The Solution
+No backend, no accounts, no API tokens. Everything runs client-side in the browser.
 
-**Handover OS** is an opinionated, executive-grade dashboard that enforces a complete handover in a single sitting and produces a professional deliverable the incoming AM, the client, and leadership can all use.
+---
 
-Key ideas:
+## Features
 
-1. **One screen, one source of truth.** Stakeholders, recurring tasks, platforms & credentials, open issues, client preferences, and a 30-day KT checklist — all captured in a single structured form.
-2. **Pre-filled with realistic mock data.** The app loads 100% complete so users see exactly what "good" looks like before they type a single character.
-3. **AI-polished preview.** A live right-hand panel shows how raw notes transform into formal, client-ready language, plus a generated 30-day onboarding roadmap.
-4. **ROI made visible.** Executive metric cards quantify time saved and risk mitigated, so the tool sells itself to leadership.
-5. **One-click, beautifully styled Excel export.** Not a plain CSV — a branded, multi-tab `.xlsx` workbook with title bands, colored section headers, zebra rows, color-coded priority/status pills, frozen headers, and auto-filters.
-6. **Upload existing artifacts.** Drag-and-drop zone for existing SOPs, notes, and emails so nothing is lost in translation.
+### 1. Document Upload (top banner)
+Drag-and-drop or browse. Text-based files (`.txt`, `.md`, `.csv`, `.json`, `.log`, `.yml`) under 2 MB are read in-browser and pattern-matched to pre-populate:
 
-The output is a single `.xlsx` file that can be emailed, attached to a CRM record, or stored in a shared drive as the canonical handover document.
+- Client name, industry, region, services
+- Platforms mentioned (Marketo, Salesforce, 6sense, ON24, Salesloft, HubSpot)
+- Stakeholders inferred from email addresses plus nearby role keywords
+- Open issues from lines starting with `issue:`, `risk:`, `bug:`, `blocker:`, `problem:`
 
-## 3. What's Inside the Generated Workbook
+A toast confirms how many fields were filled. Files appear as removable chips and ride along into the export.
 
-The "Generate & Download Excel" button reads every current form value and assembles **8 fully styled tabs**:
+### 2. Left Panel — Structured Form
+- **Client Info** — name, industry, region, services, prepared by
+- **Stakeholders** — name, role, email, notes
+- **Recurring Tasks** — task, frequency, current owner, new owner, instructions
+- **Platforms Checklist** — Marketo, Salesforce, 6sense, ON24, Salesloft + custom entries
+- **Login Compilation** — platform, link, owner, username, password, notes
+- **Open Issues** — issue, priority, status, details
+- **Client Preferences** — communication style, reporting expectations, escalation path
+- **Knowledge Transfer Notes** — tribal knowledge, watch-outs, historical context
+
+### 3. Right Panel — 30-Day Transition Plan
+An editable milestone list: tick when done, add a title, elaborate in the details field, assign an owner and set a status. Add or remove items freely. Flows straight into the workbook.
+
+### 4. Export
+A single **Generate & Download Excel** action assembles the whole workbook from live form state.
+
+---
+
+## Generated Workbook
 
 | # | Sheet | Contents |
 |---|-------|----------|
-| 1 | Executive Summary | Client snapshot, ROI metrics, 30-day transition plan |
-| 2 | Client Overview | Company profile, contract value, tier, renewal date |
-| 3 | Stakeholders | Name, role, influence, communication preferences |
-| 4 | Recurring Tasks | Cadence, owner, SLA, last-completed |
-| 5 | Platforms | Tools, access level, credential location, MFA owner |
-| 6 | Open Issues | Title, priority pill, status pill, owner, due date |
-| 7 | Client Preferences | Tone, meeting cadence, escalation path, do's & don'ts |
-| 8 | KT Checklist | 30-day onboarding tasks with check column |
+| 1 | Executive Summary | Client, prepared by, prepared date, headline counts, plan overview |
+| 2 | Client Overview | Name, industry, region, services delivered |
+| 3 | Stakeholders | Name, role, email, notes |
+| 4 | Recurring Tasks | Task, frequency, current owner, new owner, instructions |
+| 5 | Platforms | Ticked platforms only |
+| 6 | Login Compilation | Platform, link, owner, username, password, notes |
+| 7 | Open Issues | Issue, colour-coded priority, colour-coded status, details |
+| 8 | Client Preferences | Communication, reporting, escalation |
+| 9 | Knowledge Transfer Checklist | Category, notes, done column |
+| 10 | Source Documents | Uploaded file names, size, type, content snippet *(only when files are attached)* |
+| 11 | 30-Day Transition Plan | Milestone, details, owner, status *(final tab)* |
 
-Styling highlights: branded `#FF0F0F` title bands, dark ink headers, alternating zebra rows, color-coded priority (High/Med/Low) and status (Open/In Progress/Blocked/Done) pills, merged title rows, frozen header row, gridlines off, tuned column widths, and per-sheet auto-filters.
+Formatting applied to every sheet: merged branded title band, subtitle row, dark column headers, alternating zebra rows, cell borders, tuned column widths, hidden gridlines, frozen header row and auto-filter.
 
-## 4. Tech Stack
+---
 
-| Layer | Choice | Why |
-|-------|--------|-----|
-| Framework | **TanStack Start v1** (React 19 + Vite 7) | Modern full-stack React with SSR-ready routing |
-| Language | **TypeScript (strict)** | Type-safe forms and Excel cell specs |
-| Styling | **Tailwind CSS v4** via `@import` in `src/styles.css` | Native CSS tokens, OKLCH color space |
-| Icons | **lucide-react** | Consistent, lightweight icon set |
-| State | **React `useState`** | Local form state — no backend needed for the artifact flow |
-| Excel | **xlsx-js-style** + **file-saver** | Per-cell styling (fonts, fills, borders, merges, freeze, autofilter) |
-| Hosting | **Lovable** (Cloudflare Workers runtime) | Edge-deployed, zero-config publish |
-| Build | **Vite 7** with TanStack Start plugin | Fast HMR, automatic route tree generation |
+## Tech Stack
 
-Brand system: executive slate-white + black with a single `#FF0F0F` accent. Typography uses a slate-ink scale defined as OKLCH tokens in `src/styles.css`.
+| Layer | Choice |
+|-------|--------|
+| Framework | TanStack Start v1 (React 19, SSR-capable) |
+| Build tool | Vite 7 |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 (`src/styles.css`, OKLCH theme tokens) |
+| Icons | lucide-react |
+| Excel engine | `xlsx-js-style` (styled workbook generation) |
+| File download | `file-saver` |
 
-## 5. Architecture
+### Design System
+A professional slate-white and deep navy palette (`#1E3A5F`) defined as semantic tokens in `src/styles.css`. No hardcoded colour utilities in components — accents, focus rings, buttons and Excel title bands all read from the same tokens.
+
+---
+
+## Architecture
 
 ```text
 src/
 ├── routes/
-│   ├── __root.tsx        # Root layout (html/head/body shell)
-│   └── index.tsx         # The entire Handover OS dashboard
-├── styles.css            # Tailwind v4 + design tokens (OKLCH)
-└── router.tsx            # TanStack Start router bootstrap
+│   ├── __root.tsx     Root layout, head metadata, global shell
+│   └── index.tsx      The entire dashboard: state, form, plan, export engine
+├── styles.css         Tailwind v4 theme tokens (slate / navy / ink)
+└── router.tsx         TanStack Router bootstrap
 ```
 
-The dashboard is intentionally a single route (`/`) because the entire value of the tool is the one-screen, one-sitting workflow.
+Single-route by design. The whole tool is one continuous workflow — splitting it across pages would break the "capture then export" flow and add navigation state for no benefit. All form data lives in React state; nothing is persisted or transmitted.
 
-Key in-file modules inside `src/routes/index.tsx`:
-
-- **Mock data block** — realistic Northwind Industrial Group dataset for instant demo value
-- **Form state hooks** — one `useState` per section (stakeholders, tasks, platforms, issues, preferences, checklist)
-- **`buildSheet` helper** — turns an array-of-arrays + per-cell `CellSpec` objects into a styled XLSX worksheet (column widths, row heights, merges, freeze, autofilter)
-- **`makeTableSheet` helper** — standard styled table with header row + zebra body rows
-- **`generateExcel`** — orchestrates all 8 sheets and triggers `file-saver` download
-- **AI Preview tabs** — show raw → polished transformations and a generated 30-day roadmap
-- **ROI cards** — Time Saved (6.5 hrs) and Risk Mitigation (98%)
-
-## 6. Getting Started Locally
-
-Prerequisites: **Bun** (or Node 20+ with npm).
-
-```bash
-# install
-bun install
-
-# run dev server
-bun run dev
-
-# build for production
-bun run build
-```
-
-The dev server runs on Vite's default port. Open the URL it prints.
-
-## 7. How to Use
-
-1. **Open the app** — it loads pre-filled with mock B2B data so you can see the finished shape immediately.
-2. **(Optional) Drop existing artifacts** — use the top-banner drag-and-drop to attach existing SOPs, notes, or email exports.
-3. **Edit the left panel** — overwrite the mock data with real client information across all sections.
-4. **Watch the right panel** — the AI-polished preview, 30-day roadmap, and ROI metrics update live.
-5. **Click "Generate & Download Excel"** — a fully styled multi-tab `.xlsx` is generated client-side and downloaded.
-6. **Share the file** — attach it to the CRM, email it to the incoming AM, or store it in the client folder.
-
-No backend, no account, no data leaves the browser.
-
-## 8. Design Principles
-
-- **Executive aesthetic** — slate-white, black, single red accent. No gradients-for-gradient's-sake.
-- **Show, don't tell** — pre-filled mock data demonstrates the tool's value in the first 3 seconds.
-- **One artifact, not ten** — the Excel file is the deliverable. Everything else is scaffolding.
-- **Polish over features** — a beautiful, branded XLSX beats a plain one with twice the columns.
-
-## 9. Roadmap Ideas
-
-- Persist drafts to Lovable Cloud (auto-save)
-- Real AI polish via Lovable AI Gateway (Gemini) instead of static transforms
-- PDF export with the same branding
-- Multi-client library with search and version history
-- Role-based access (outgoing AM, incoming AM, manager)
-- Slack / Email delivery of the generated workbook
-
-## 10. Deploying
-
-This project is built and hosted with **Lovable**. To publish your own changes:
-
-- **Frontend changes** — click **Publish → Update** in the Lovable editor
-- **Custom domain** — Project Settings → Domains, after first publish
-
-To self-host, the codebase is standard TanStack Start and can be deployed to any platform that supports a Vite-built TanStack Start app (Cloudflare Workers, Netlify, Vercel, Node).
-
-## 11. Connecting to GitHub
-
-In the Lovable editor: **Plus (+) → GitHub → Connect project**, authorize the Lovable GitHub App, and create a repository. Once connected, changes in Lovable push to GitHub in real time, and commits pushed to GitHub sync back to Lovable automatically.
-
-## 12. License
-
-Proprietary — all rights reserved by the project owner. Contact for licensing terms.
+### Principles
+- **Client-side only** — no server, no database, no API keys, no rate limits, no cost per use
+- **Blank by default** — every field starts empty with a plain-language placeholder so the output is never polluted with sample data
+- **Polish over features** — the deliverable is a document an executive will open; formatting is the product
+- **Privacy by default** — uploaded documents are parsed in the browser and never leave the machine
 
 ---
 
-Built with Lovable.
+## Running Locally
+
+```bash
+npm install
+npm run dev      # http://localhost:8080
+npm run build    # production build
+```
+
+## Notes & Limitations
+
+- Login credentials are stored in browser memory and written into the exported file in plain text — treat the workbook as confidential and distribute accordingly.
+- Auto-fill parsing covers text-based formats only. PDF and DOCX files are listed in the Source Documents tab but not parsed.
+- Nothing is saved between page reloads; export before closing the tab.

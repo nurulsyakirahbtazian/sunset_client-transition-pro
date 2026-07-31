@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx-js-style";
-import { saveAs } from "file-saver";
+import fileSaver from "file-saver";
+
+const { saveAs } = fileSaver;
 import {
   Upload, FileSpreadsheet, Users, Briefcase, ListChecks, AlertTriangle,
   MessageSquare, BookOpen, Layers, Download,
