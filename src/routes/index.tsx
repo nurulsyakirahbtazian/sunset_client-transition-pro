@@ -198,7 +198,7 @@ function Dashboard() {
 
   const generateExcel = () => {
     // ----- Styling helpers -----
-    const BRAND = "FF0F0F";
+    const BRAND = "1E3A5F";
     const INK = "1A2233";
     const SUBINK = "3A4456";
     const SOFT = "F4F6FA";

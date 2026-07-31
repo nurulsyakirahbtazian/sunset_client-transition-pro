@@ -29,7 +29,7 @@
   --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --shadow-elevated: 0 10px 30px -12px rgb(15 23 42 / 0.18);
-  --shadow-brand: 0 12px 32px -10px rgb(255 15 15 / 0.45);
+  --shadow-brand: 0 12px 32px -10px rgb(30 58 95 / 0.45);
 }
 
 :root {
@@ -42,12 +42,12 @@
   --muted-foreground: oklch(0.48 0.015 260);
   --border: oklch(0.92 0.008 250);
   --input: oklch(0.94 0.008 250);
-  --ring: oklch(0.62 0.22 25);
+  --ring: oklch(0.55 0.12 250);
   --primary: oklch(0.16 0.02 260);
   --primary-foreground: oklch(0.99 0.002 250);
   --accent: oklch(0.96 0.006 250);
   --accent-foreground: oklch(0.18 0.02 260);
-  --brand: oklch(0.62 0.245 26);
+  --brand: oklch(0.38 0.075 250);
   --brand-foreground: oklch(0.99 0.002 250);
   --slate-ink: oklch(0.22 0.02 260);
   --slate-soft: oklch(0.55 0.02 260);
